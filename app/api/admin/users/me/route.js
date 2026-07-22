@@ -20,13 +20,32 @@ export async function GET(request) {
   // can fall back to legacy behavior (any signed-in user = full access) instead
   // of locking everyone out mid-migration.
   if (!isAdminConfigured()) {
+    console.error(
+      "[admin-auth] Admin SDK not configured — missing FIREBASE_ADMIN_PROJECT_ID / " +
+        "FIREBASE_ADMIN_CLIENT_EMAIL / FIREBASE_ADMIN_PRIVATE_KEY"
+    );
     return NextResponse.json({ configured: false });
   }
 
-  // Verify the Firebase ID token and load this person's admin record.
-  const { user, error, status } = await requireAdmin(request);
-  if (error) return NextResponse.json({ configured: true, error }, { status });
+  try {
+    // Verify the Firebase ID token and load this person's admin record.
+    const { user, error, status } = await requireAdmin(request);
+    if (error) return NextResponse.json({ configured: true, error }, { status });
 
-  // Success: hand back the clean user object (uid, email, role, perms, ...).
-  return NextResponse.json({ configured: true, user });
+    // Success: hand back the clean user object (uid, email, role, perms, ...).
+    return NextResponse.json({ configured: true, user });
+  } catch (err) {
+    // A thrown error here almost always means the Admin credential is broken
+    // (malformed FIREBASE_ADMIN_PRIVATE_KEY) or Firestore is unreachable.
+    console.error(
+      "[admin-auth] /api/admin/users/me crashed:",
+      err?.code || "unknown",
+      "-",
+      err?.message || String(err)
+    );
+    return NextResponse.json(
+      { configured: true, error: "Could not verify your access." },
+      { status: 500 }
+    );
+  }
 }
