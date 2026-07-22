@@ -1,0 +1,25 @@
+rules_version = '2';
+
+// BetIndia Firebase Storage rules.
+//
+// Apply in the Firebase console (Storage → Rules → Publish). Blog images are
+// public content (read by anyone), and uploads come from the admin CMS via the
+// Web SDK as the signed-in admin — so writes require authentication.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Blog images — public read, authenticated write, max 5 MB, images only.
+    match /blog/{imageId} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Everything else is locked down by default.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

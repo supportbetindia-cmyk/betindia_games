@@ -1,0 +1,88 @@
+rules_version = '2';
+
+// BetIndia Firestore security rules.
+//
+// Apply these in the Firebase console (Firestore -> Rules -> Publish).
+//
+// ⚠️ PUBLISH ORDER MATTERS. These rules require the writer to have an
+// `adminUsers/{uid}` record (created by the Admin SDK the first time a
+// superadmin loads the panel). So:
+//   1) Add the FIREBASE_ADMIN_* + SUPERADMIN_EMAILS env vars.
+//   2) Sign in to /admin once as your superadmin email (this creates your
+//      adminUsers record automatically).
+//   3) THEN publish these rules.
+// If you publish before step 2, no one will have a record yet and all admin
+// writes will be denied.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---- Role helpers ----------------------------------------------------
+    // Read the caller's admin record. get()/exists() in rules bypass read
+    // rules, so this works even though `adminUsers` is otherwise locked below.
+    function adminData() {
+      return get(/databases/$(database)/documents/adminUsers/$(request.auth.uid)).data;
+    }
+    // A provisioned, non-disabled admin.
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/adminUsers/$(request.auth.uid))
+        && adminData().disabled != true;
+    }
+    // Full-access superadmin.
+    function isSuper() {
+      return isAdmin() && adminData().role == 'superadmin';
+    }
+    // Has a specific section permission (superadmins always pass).
+    function hasPerm(area) {
+      return isSuper() || (isAdmin() && adminData().perms[area] == true);
+    }
+
+    // ---- adminUsers ------------------------------------------------------
+    // Only the server (Admin SDK, which bypasses these rules) may read/write
+    // the roster. No client access at all — this is the source of truth for
+    // permissions, so it must not be editable from the browser.
+    match /adminUsers/{uid} {
+      allow read, write: if false;
+    }
+
+    // ---- adminAudit ------------------------------------------------------
+    // Append-only audit trail, written by the server (Admin SDK) and read via
+    // GET /api/admin/audit. No direct client access.
+    match /adminAudit/{entryId} {
+      allow read, write: if false;
+    }
+
+    // ---- Blog posts ------------------------------------------------------
+    // Public read; writes require the "blog" permission.
+    match /posts/{slug} {
+      allow read: if true;
+      allow write: if hasPerm('blog');
+    }
+
+    // ---- Editable page hero content -------------------------------------
+    // Public read; written by the SEO, Page-Images, and Content editors, so any
+    // of those permissions may write.
+    match /pageContent/{pageId} {
+      allow read: if true;
+      allow write: if hasPerm('seo') || hasPerm('images') || hasPerm('content');
+    }
+
+    // ---- CMS pages (pages/{pageId} + section subcollection) -------------
+    // Public read; writes require the "content" permission.
+    match /pages/{pageId} {
+      allow read: if true;
+      allow write: if hasPerm('content');
+
+      match /section/{sectionId} {
+        allow read: if true;
+        allow write: if hasPerm('content');
+      }
+    }
+
+    // Everything else is locked down by default.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

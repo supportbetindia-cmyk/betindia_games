@@ -1,0 +1,213 @@
+@import "tailwindcss";
+
+:root {
+  --background: #050B18;
+  --foreground: #ffffff;
+
+  /* BetIndia Brand */
+  --color-primary: #FF6B00;
+  --color-primary-hover: #e05e00;
+  --color-secondary: #0B1F3A;
+  --color-accent: #138808;
+  --color-surface: rgba(255, 255, 255, 0.05);
+  --color-surface-hover: rgba(255, 255, 255, 0.08);
+  --color-border: rgba(255, 255, 255, 0.1);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-poppins);
+  --font-mono: var(--font-geist-mono);
+
+  /* Animations */
+  --animate-float: float 4s ease-in-out infinite;
+  --animate-float-slow: float-slow 6s ease-in-out infinite;
+  --animate-float-fast: float-fast 3s ease-in-out infinite;
+  --animate-glow-pulse: glow-pulse 2.5s ease-in-out infinite alternate;
+  --animate-glow-green: glow-green 3s ease-in-out infinite alternate;
+  --animate-slide-up: slide-up 0.7s ease-out forwards;
+  --animate-slide-left: slide-left 0.7s ease-out forwards;
+  --animate-fade-in: fade-in 0.6s ease-out forwards;
+  --animate-counter: counter 2s ease-out forwards;
+  --animate-live-blink: live-blink 1.2s ease-in-out infinite;
+  --animate-shimmer: shimmer 2.5s linear infinite;
+  --animate-spin-slow: spin-slow 8s linear infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-8px) rotate(0.5deg); }
+  66% { transform: translateY(-4px) rotate(-0.5deg); }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes float-fast {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes glow-pulse {
+  0% { opacity: 0.5; transform: scale(1); }
+  100% { opacity: 0.85; transform: scale(1.05); }
+}
+
+@keyframes glow-green {
+  0% { opacity: 0.3; transform: scale(1); }
+  100% { opacity: 0.6; transform: scale(1.08); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-left {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes live-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+html {
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-poppins), Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-dark {
+  background: rgba(5, 11, 24, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ── Consistent page headings across every page ──────────────────────────────
+   Every page's hero title (<h1> in <main>) uses one fluid size, weight and
+   colour. font-size scales smoothly from phone → desktop (clamp), so it's
+   mobile-optimised automatically. Gradient-accent words keep their colour
+   because their own classes (bg-clip-text / text-transparent) take precedence;
+   only the base colour + size are normalised here. */
+main h1 {
+  font-size: clamp(1.875rem, 1.05rem + 3.7vw, 3rem);
+  line-height: 1.12;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+/* Cleaner heading wrapping on small screens (no awkward single-word lines). */
+main :is(h1, h2, h3) {
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+/* Every page heading solid white — including gradient-accent words. Overrides
+   the bg-clip-text / text-transparent gradient spans so the whole heading is
+   white. Scoped to <main>, so the footer's coloured column titles are kept. */
+main :is(h1, h2, h3, h4, h5, h6),
+main :is(h1, h2, h3, h4, h5, h6) :is(span, strong, em, b, a) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background-image: none !important;
+}
+
+/* ── Mobile only (phones < 768px): center all section text. ──────────────────
+   Scoped to <main>, so the header and footer are unaffected. Desktop/tablet
+   (≥ 768px) keep their original alignment. Excludes pages with no-center-mobile class. */
+@media (max-width: 767px) {
+  main:not(.no-center-mobile) :is(h1, h2, h3, h4, h5, h6, p, blockquote, li) {
+    text-align: center !important;
+  }
+  /* Exception: blocks that should keep their desktop (left) alignment on
+     phones, e.g. heroes that mirror the PC layout. Must stay AFTER the
+     centering rule — equal specificity, so source order decides. */
+  main .keep-desktop-align :is(h1, h2, h3, h4, h5, h6, p, blockquote, li) {
+    text-align: left !important;
+  }
+}
+
+/* ── UI polish: buttons & links ──────────────────────────────────────────────
+   Consistent keyboard focus ring (accessibility) + subtle press feedback. */
+main a:focus-visible,
+main button:focus-visible {
+  outline: 2px solid #FF6B00;
+  outline-offset: 2px;
+  border-radius: 0.6rem;
+}
+main button:active {
+  transform: translateY(0.5px);
+}
+
+/* ── UI polish: mobile spacing (phones < 768px) ──────────────────────────────
+   Shrink oversized section padding so pages feel tighter and less stretched on
+   phones. Only the large paddings are reduced; smaller ones stay as-is. */
+@media (max-width: 767px) {
+  main .py-24 { padding-top: 3rem;    padding-bottom: 3rem;    }
+  main .py-20 { padding-top: 2.75rem; padding-bottom: 2.75rem; }
+  main .py-16 { padding-top: 2.5rem;  padding-bottom: 2.5rem;  }
+  main .pt-20 { padding-top: 2.75rem; }
+  main .pt-16 { padding-top: 2.5rem;  }
+  main .pb-20 { padding-bottom: 2.75rem; }
+  main .pb-16 { padding-bottom: 2.5rem;  }
+}
+
+/* ── UI polish: cards ────────────────────────────────────────────────────────
+   Smooth, consistent transitions on glass/blur cards so hover & focus feel
+   uniform across the site. Deliberately does not override each card's border,
+   radius or background — only normalises the motion. */
+main [class*="backdrop-blur"] {
+  transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease,
+    background-color 0.3s ease;
+}
+
+/* Ticker animation */
+.ticker-track {
+  animation: ticker-scroll 28s linear infinite;
+}
+.ticker-track:hover {
+  animation-play-state: paused;
+}
