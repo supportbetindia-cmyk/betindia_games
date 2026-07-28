@@ -20,21 +20,26 @@ export default function ImagesPageList() {
 
   useEffect(() => {
     async function init() {
-      const data = await getPages();
+      // Local CMS_DATA is the source of truth so the list works even before the
+      // Firestore `pages` collection is seeded (the site renders from CMS_DATA).
+      // Firestore page docs, when present, only override the name/slug.
+      const fsPages = await getPages();
+      const fsById = new Map(fsPages.map((p) => [p.id, p]));
 
-      // Only show pages wired to a public route (hide stray Firestore docs).
-      const pageList = data.filter((p) => p.id in PAGE_ROUTES).map((p) => {
-        // Find default hero image from CMS_DATA
-        const defaultPageData = CMS_DATA.find((item) => item.pageId === p.id);
-        const defaultImage = defaultPageData?.sections?.hero?.imageUrl || "";
+      // Only show pages wired to a public route.
+      const pageList = CMS_DATA.filter((p) => p.pageId in PAGE_ROUTES)
+        .map((p) => {
+          const fs = fsById.get(p.pageId);
+          const defaultImage = p.sections?.hero?.imageUrl || "";
 
-        return {
-          id: p.id,
-          name: p.name || p.id,
-          slug: p.slug || "",
-          defaultImage,
-        };
-      }).sort((a, b) => a.name.localeCompare(b.name));
+          return {
+            id: p.pageId,
+            name: fs?.name || p.name || p.pageId,
+            slug: fs?.slug || p.slug || PAGE_ROUTES[p.pageId] || "",
+            defaultImage,
+          };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
 
       setPages(pageList);
       setLoading(false);

@@ -69,14 +69,17 @@ service cloud.firestore {
     }
 
     // ---- CMS pages (pages/{pageId} + section subcollection) -------------
-    // Public read; writes require the "content" permission.
+    // Public read. Page-level docs (meta title/description) are written by the
+    // SEO editor; section docs (hero content, page images) are written by the
+    // Content and Page-Images editors — so grant the matching permissions.
+    // Superadmins always pass via hasPerm().
     match /pages/{pageId} {
       allow read: if true;
-      allow write: if hasPerm('content');
+      allow write: if hasPerm('content') || hasPerm('seo');
 
       match /section/{sectionId} {
         allow read: if true;
-        allow write: if hasPerm('content');
+        allow write: if hasPerm('content') || hasPerm('images') || hasPerm('seo');
       }
     }
 

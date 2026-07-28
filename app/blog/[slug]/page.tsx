@@ -61,6 +61,77 @@ export async function generateMetadata({
 
 
 
+function FormattedText({ text, accent }: { text: string; accent?: string }) {
+  if (!text) return null;
+
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)|(https?:\/\/[^\s<]+)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = linkRegex.exec(text)) !== null) {
+    const matchIndex = match.index;
+
+    if (matchIndex > lastIndex) {
+      parts.push(text.substring(lastIndex, matchIndex));
+    }
+
+    if (match[1] && match[2]) {
+      const label = match[1];
+      const url = match[2];
+      const isInternal = url.startsWith("/") || url.startsWith("#");
+
+      if (isInternal) {
+        parts.push(
+          <Link
+            key={matchIndex}
+            href={url}
+            className="font-bold underline decoration-[#FF6B00]/40 underline-offset-4 transition hover:decoration-[#FF6B00]"
+            style={{ color: accent || "#FF6B00" }}
+          >
+            {label}
+          </Link>
+        );
+      } else {
+        parts.push(
+          <a
+            key={matchIndex}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold underline decoration-[#FF6B00]/40 underline-offset-4 transition hover:decoration-[#FF6B00]"
+            style={{ color: accent || "#FF6B00" }}
+          >
+            {label}
+          </a>
+        );
+      }
+    } else if (match[3]) {
+      const url = match[3];
+      parts.push(
+        <a
+          key={matchIndex}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-bold underline decoration-[#FF6B00]/40 underline-offset-4 transition hover:decoration-[#FF6B00]"
+          style={{ color: accent || "#FF6B00" }}
+        >
+          {url}
+        </a>
+      );
+    }
+
+    lastIndex = matchIndex + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return <>{parts}</>;
+}
+
 function ArticleHero({
   category,
   accent,
@@ -119,7 +190,7 @@ function ArticleHero({
 
         {/* Excerpt */}
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-400 md:text-lg">
-          {excerpt}
+          <FormattedText text={excerpt} accent={accent} />
         </p>
 
         {/* Meta row */}
@@ -348,19 +419,21 @@ function ArticleSection({
   accent: string;
   index: number;
 }) {
+  const paragraphs = (content || "").split(/\n\n+/).filter(Boolean);
+
   return (
     <div className="group space-y-4">
       <h2 className="text-lg font-extrabold leading-snug tracking-tight text-white md:text-xl">
-        <span
-          className="mr-2 font-black"
-          style={{ color: accent }}
-        >
-          {String(index + 1).padStart(2, "0")}.
-        </span>
         {heading}
       </h2>
 
-      <p className="text-sm leading-[1.9] text-slate-400 md:text-[0.9375rem] md:leading-[1.9]">{content}</p>
+      <div className="space-y-3">
+        {paragraphs.map((para, pIdx) => (
+          <p key={pIdx} className="text-sm leading-[1.9] text-slate-400 md:text-[0.9375rem] md:leading-[1.9]">
+            <FormattedText text={para} accent={accent} />
+          </p>
+        ))}
+      </div>
 
       {image && (
         <div className="overflow-hidden rounded-2xl border border-white/[0.07]">
@@ -379,7 +452,9 @@ function ArticleSection({
                 style={{ color: accent }}
                 strokeWidth={2}
               />
-              <span className="leading-[1.75]">{item}</span>
+              <span className="leading-[1.75]">
+                <FormattedText text={item} accent={accent} />
+              </span>
             </li>
           ))}
         </ul>
@@ -403,7 +478,7 @@ function ArticleSection({
             <span className="font-bold" style={{ color: accent }}>
               Pro tip:{" "}
             </span>
-            {tip}
+            <FormattedText text={tip} accent={accent} />
           </p>
         </div>
       )}

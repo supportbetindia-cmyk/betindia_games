@@ -12,10 +12,18 @@ import {
   ArrowUp,
   ArrowDown,
   Sparkles,
+  Wand2,
+  FileText as FileTextIcon,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Link2 as LinkIcon,
+  ExternalLink,
 } from "lucide-react";
 import { getAdminPost, savePost, type AdminPost, type Accent } from "@/lib/blog-admin";
 import { BLOG_ICONS } from "@/lib/blog-icons";
 import ImageField from "@/app/admin/component/cms/ImageField";
+import { parseRawArticleText, SAMPLE_PASTE_TEXT, type ParsedArticleResult } from "@/lib/blog-parser";
 import { revalidateBlog } from "../actions";
 
 type FormState = Omit<AdminPost, "tags" | "relatedSlugs"> & {
@@ -49,6 +57,121 @@ export default function BlogPostEditor() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Auto-detect parser state
+  const [showParser, setShowParser] = useState(isNew);
+  const [rawText, setRawText] = useState("");
+  const [parsedResult, setParsedResult] = useState<ParsedArticleResult | null>(null);
+  const [parserNotice, setParserNotice] = useState<string | null>(null);
+
+  // Link Modal state
+  const [linkModal, setLinkModal] = useState<{
+    isOpen: boolean;
+    targetField: "excerpt" | "content" | "tip" | "bullet";
+    sectionIndex?: number;
+    bulletIndex?: number;
+    text: string;
+    url: string;
+  }>({
+    isOpen: false,
+    targetField: "content",
+    text: "",
+    url: "",
+  });
+
+  function openLinkModal(
+    targetField: "excerpt" | "content" | "tip" | "bullet",
+    sectionIndex?: number,
+    bulletIndex?: number
+  ) {
+    setLinkModal({
+      isOpen: true,
+      targetField,
+      sectionIndex,
+      bulletIndex,
+      text: "",
+      url: "",
+    });
+  }
+
+  function handleInsertLink() {
+    if (!linkModal.url.trim()) return;
+    const label = linkModal.text.trim() || linkModal.url.trim();
+    const linkMarkdown = `[${label}](${linkModal.url.trim()})`;
+    const { targetField, sectionIndex, bulletIndex } = linkModal;
+
+    if (targetField === "excerpt") {
+      setForm((prev) => ({
+        ...prev,
+        excerpt: prev.excerpt ? `${prev.excerpt} ${linkMarkdown}` : linkMarkdown,
+      }));
+    } else if (targetField === "content" && sectionIndex !== undefined) {
+      setForm((prev) => {
+        const updated = [...prev.sections];
+        const currentContent = updated[sectionIndex].content || "";
+        updated[sectionIndex] = {
+          ...updated[sectionIndex],
+          content: currentContent ? `${currentContent} ${linkMarkdown}` : linkMarkdown,
+        };
+        return { ...prev, sections: updated };
+      });
+    } else if (targetField === "tip" && sectionIndex !== undefined) {
+      setForm((prev) => {
+        const updated = [...prev.sections];
+        const currentTip = updated[sectionIndex].tip || "";
+        updated[sectionIndex] = {
+          ...updated[sectionIndex],
+          tip: currentTip ? `${currentTip} ${linkMarkdown}` : linkMarkdown,
+        };
+        return { ...prev, sections: updated };
+      });
+    } else if (
+      targetField === "bullet" &&
+      sectionIndex !== undefined &&
+      bulletIndex !== undefined
+    ) {
+      setForm((prev) => {
+        const updated = [...prev.sections];
+        const bullets = [...(updated[sectionIndex].bullets || [])];
+        const currentBullet = bullets[bulletIndex] || "";
+        bullets[bulletIndex] = currentBullet ? `${currentBullet} ${linkMarkdown}` : linkMarkdown;
+        updated[sectionIndex] = { ...updated[sectionIndex], bullets };
+        return { ...prev, sections: updated };
+      });
+    }
+
+    setLinkModal((prev) => ({ ...prev, isOpen: false }));
+  }
+
+  function handleAutoDetect() {
+    if (!rawText.trim()) return;
+    const result = parseRawArticleText(rawText);
+    setParsedResult(result);
+  }
+
+  function handleLoadSample() {
+    setRawText(SAMPLE_PASTE_TEXT);
+    const result = parseRawArticleText(SAMPLE_PASTE_TEXT);
+    setParsedResult(result);
+  }
+
+  function handleApplyParsedResult() {
+    if (!parsedResult) return;
+
+    setForm((prev) => ({
+      ...prev,
+      title: parsedResult.title || prev.title,
+      slug: isNew && parsedResult.slug ? parsedResult.slug : prev.slug,
+      category: parsedResult.category || prev.category,
+      excerpt: parsedResult.excerpt || prev.excerpt,
+      readTime: parsedResult.readTime || prev.readTime,
+      tagsInput: parsedResult.tags.length > 0 ? parsedResult.tags.join(", ") : prev.tagsInput,
+      sections: parsedResult.sections.length > 0 ? parsedResult.sections : prev.sections,
+    }));
+
+    setParserNotice(`Successfully auto-detected and populated Title, Slug, Category, Excerpt, Read Time, Tags, and ${parsedResult.sections.length} Sections!`);
+    setTimeout(() => setParserNotice(null), 8000);
+  }
 
   useEffect(() => {
     if (isNew) return;
@@ -257,6 +380,154 @@ export default function BlogPostEditor() {
         </div>
       )}
 
+      {/* Auto-Detect Parser Banner/Tool */}
+      <div className="rounded-2xl border border-[#FF6B00]/30 bg-gradient-to-br from-[#FF6B00]/10 via-[#FF6B00]/5 to-transparent p-6 backdrop-blur-xl space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-xl border border-[#FF6B00]/40 bg-[#FF6B00]/20 text-[#FF6B00]">
+              <Wand2 size={20} />
+            </div>
+            <div>
+              <h2 className="text-base font-extrabold text-white flex items-center gap-2">
+                Auto-Detect Headings & Content Importer
+                <span className="rounded-full bg-[#FF6B00]/20 border border-[#FF6B00]/40 px-2.5 py-0.5 text-[10px] font-bold text-[#FF6B00]">
+                  AI Smart Parser
+                </span>
+              </h2>
+              <p className="text-xs text-slate-400">
+                Paste any raw article text with mixed headings, paragraphs, and FAQs. It automatically detects title, headings, paragraphs, excerpt, tags, and read time.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowParser(!showParser)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 px-3.5 py-2 text-xs font-bold text-slate-300 transition cursor-pointer"
+          >
+            {showParser ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            {showParser ? "Hide Parser" : "Paste Raw Content"}
+          </button>
+        </div>
+
+        {parserNotice && (
+          <div className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-xs font-bold text-emerald-300 animate-in fade-in">
+            <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+            {parserNotice}
+          </div>
+        )}
+
+        {showParser && (
+          <div className="space-y-4 pt-2 border-t border-white/[0.08]">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Paste Article Content Below:
+                </label>
+                <button
+                  type="button"
+                  onClick={handleLoadSample}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-[#FF6B00]/40 bg-[#FF6B00]/15 hover:bg-[#FF6B00]/25 px-2.5 py-1 text-[11px] font-bold text-[#FF6B00] transition cursor-pointer"
+                >
+                  <Sparkles size={12} />
+                  Load Sample (Live Casino Aviator)
+                </button>
+              </div>
+
+              <textarea
+                placeholder="Paste full article text here (e.g. Title, What Is..., Why Players..., How to Play..., FAQs)..."
+                value={rawText}
+                onChange={(e) => {
+                  setRawText(e.target.value);
+                  if (e.target.value.trim()) {
+                    setParsedResult(parseRawArticleText(e.target.value));
+                  } else {
+                    setParsedResult(null);
+                  }
+                }}
+                rows={8}
+                className="w-full rounded-xl border border-white/15 bg-[#030810]/80 p-4 text-xs font-mono leading-relaxed text-slate-200 outline-none focus:border-[#FF6B00] transition resize-y"
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={handleAutoDetect}
+                disabled={!rawText.trim()}
+                className="inline-flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 px-4 py-2.5 text-xs font-bold text-white transition disabled:opacity-40 cursor-pointer"
+              >
+                <Wand2 size={14} className="text-[#FF6B00]" />
+                Auto-Detect Headings & Content
+              </button>
+
+              {parsedResult && parsedResult.sections.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleApplyParsedResult}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#FF6B00] hover:bg-[#FF8A00] px-5 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-[#FF6B00]/20 transition cursor-pointer"
+                >
+                  <CheckCircle2 size={14} />
+                  Apply Auto-Detected Content ({parsedResult.sections.length} Sections)
+                </button>
+              )}
+            </div>
+
+            {/* Parsed Result Preview */}
+            {parsedResult && (
+              <div className="rounded-xl border border-white/10 bg-[#030810]/60 p-4 space-y-4 text-xs">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                  <span className="font-bold uppercase tracking-wider text-[#FF6B00]">
+                    Detection Summary
+                  </span>
+                  <span className="text-slate-400">
+                    {parsedResult.sections.length} Sections Found • {parsedResult.readTime}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <span className="block text-slate-500 font-medium">Title:</span>
+                    <span className="font-bold text-white">{parsedResult.title || "None detected"}</span>
+                  </div>
+
+                  <div>
+                    <span className="block text-slate-500 font-medium">Slug:</span>
+                    <span className="font-mono text-emerald-400">{parsedResult.slug || "None"}</span>
+                  </div>
+
+                  <div>
+                    <span className="block text-slate-500 font-medium">Category:</span>
+                    <span className="font-semibold text-slate-300">{parsedResult.category}</span>
+                  </div>
+
+                  <div>
+                    <span className="block text-slate-500 font-medium">Tags:</span>
+                    <span className="text-slate-300">{parsedResult.tags.join(", ") || "None"}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="block text-slate-500 font-medium mb-1">Detected Headings ({parsedResult.sections.length}):</span>
+                  <div className="max-h-48 overflow-y-auto space-y-1.5 rounded-lg border border-white/5 bg-white/[0.02] p-2.5">
+                    {parsedResult.sections.map((sec, idx) => (
+                      <div key={idx} className="flex items-start justify-between gap-2 text-[11px] border-b border-white/[0.03] pb-1 last:border-0">
+                        <span className="font-bold text-slate-200">
+                          {sec.heading}
+                        </span>
+                        <span className="shrink-0 text-[10px] text-slate-500 font-mono">
+                          {sec.content.split(/\n\n+/).filter(Boolean).length} para(s)
+                          {sec.bullets ? `, ${sec.bullets.length} bullets` : ""}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Core Metadata Fields */}
         <div className="rounded-2xl border border-white/[0.07] bg-white/[0.04] p-6 backdrop-blur-xl space-y-6">
@@ -391,9 +662,19 @@ export default function BlogPostEditor() {
 
           {/* Excerpt */}
           <div className="space-y-2">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Excerpt (Summary for SEO)
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Excerpt (Summary for SEO)
+              </label>
+              <button
+                type="button"
+                onClick={() => openLinkModal("excerpt")}
+                className="inline-flex items-center gap-1 rounded border border-[#FF6B00]/40 bg-[#FF6B00]/10 hover:bg-[#FF6B00]/20 px-2 py-0.5 text-[10px] font-bold text-[#FF6B00] transition cursor-pointer"
+              >
+                <LinkIcon size={11} />
+                Add Link
+              </button>
+            </div>
             <textarea
               placeholder="Provide a concise summary of the article..."
               value={form.excerpt}
@@ -551,11 +832,21 @@ export default function BlogPostEditor() {
 
                     {/* Section Content */}
                     <div className="space-y-1.5">
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                        Content (Paragraph Body)
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                          Content (Paragraph Body)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => openLinkModal("content", index)}
+                          className="inline-flex items-center gap-1 rounded border border-[#FF6B00]/40 bg-[#FF6B00]/10 hover:bg-[#FF6B00]/20 px-2 py-0.5 text-[10px] font-bold text-[#FF6B00] transition cursor-pointer"
+                        >
+                          <LinkIcon size={11} />
+                          Add Link
+                        </button>
+                      </div>
                       <textarea
-                        placeholder="Write paragraph content here..."
+                        placeholder="Write paragraph content here... (Tip: use [Link Text](URL) to format links)"
                         value={section.content}
                         onChange={(e) => handleSectionChange(index, "content", e.target.value)}
                         rows={6}
@@ -565,9 +856,19 @@ export default function BlogPostEditor() {
 
                     {/* Section Tip */}
                     <div className="space-y-1.5">
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                        Special Callout/Tip (Optional)
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                          Special Callout/Tip (Optional)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => openLinkModal("tip", index)}
+                          className="inline-flex items-center gap-1 rounded border border-[#FF6B00]/40 bg-[#FF6B00]/10 hover:bg-[#FF6B00]/20 px-2 py-0.5 text-[10px] font-bold text-[#FF6B00] transition cursor-pointer"
+                        >
+                          <LinkIcon size={11} />
+                          Add Link
+                        </button>
+                      </div>
                       <input
                         type="text"
                         placeholder="e.g. Always check the weather forecast before placing a match winner bet."
@@ -615,6 +916,14 @@ export default function BlogPostEditor() {
                               />
                               <button
                                 type="button"
+                                onClick={() => openLinkModal("bullet", index, bulletIdx)}
+                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#FF6B00]/30 bg-[#FF6B00]/10 text-[#FF6B00] hover:bg-[#FF6B00]/20 cursor-pointer"
+                                title="Add Link"
+                              >
+                                <LinkIcon size={12} />
+                              </button>
+                              <button
+                                type="button"
                                 onClick={() => handleRemoveBullet(index, bulletIdx)}
                                 className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5 text-red-450 hover:bg-red-500/10 cursor-pointer"
                               >
@@ -650,6 +959,94 @@ export default function BlogPostEditor() {
           </Link>
         </div>
       </form>
+
+      {/* Hyperlink Insertion Modal */}
+      {linkModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#070F22] p-6 shadow-2xl space-y-5 text-white">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2 font-bold text-base">
+                <LinkIcon size={18} className="text-[#FF6B00]" />
+                Insert Hyperlink
+              </div>
+              <button
+                type="button"
+                onClick={() => setLinkModal((prev) => ({ ...prev, isOpen: false }))}
+                className="text-slate-400 hover:text-white text-xs font-bold"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Link Text / Anchor Text
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Play Aviator Online or BetIndia"
+                  value={linkModal.text}
+                  onChange={(e) => setLinkModal((prev) => ({ ...prev, text: e.target.value }))}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Target URL (Internal Path or External Link)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. /casino or https://betindia.com"
+                  value={linkModal.url}
+                  onChange={(e) => setLinkModal((prev) => ({ ...prev, url: e.target.value }))}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <span className="block text-[11px] font-semibold text-slate-400">Quick URL Presets:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { label: "Casino Games", url: "/casino" },
+                    { label: "Cricket Betting", url: "/cricket" },
+                    { label: "Blog Main", url: "/blog" },
+                    { label: "BetIndia Site", url: "https://betindia.com" },
+                  ].map((preset) => (
+                    <button
+                      key={preset.url}
+                      type="button"
+                      onClick={() => setLinkModal((prev) => ({ ...prev, url: preset.url }))}
+                      className="rounded-lg border border-white/10 bg-white/5 hover:bg-[#FF6B00]/20 px-2 py-1 text-[11px] font-semibold text-slate-300 transition"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handleInsertLink}
+                disabled={!linkModal.url.trim()}
+                className="flex-1 rounded-xl bg-[#FF6B00] hover:bg-[#FF8A00] px-4 py-2.5 text-xs font-bold text-white transition disabled:opacity-50 cursor-pointer"
+              >
+                Insert Link into Content
+              </button>
+              <button
+                type="button"
+                onClick={() => setLinkModal((prev) => ({ ...prev, isOpen: false }))}
+                className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-bold text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

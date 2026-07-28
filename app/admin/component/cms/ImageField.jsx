@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { uploadImage } from "@/lib/storage";
+import { Trash2 } from "lucide-react";
 
 export default function ImageField({
   label,
@@ -23,7 +24,6 @@ export default function ImageField({
       if (!url) throw new Error("Upload returned no URL.");
       onChange(url);
     } catch (err) {
-      // Surface the real reason (missing env, RLS policy, wrong bucket, …)
       console.error("Image upload failed:", err);
       setError(err?.message || "Upload failed. Check the console for details.");
     } finally {
@@ -31,18 +31,46 @@ export default function ImageField({
     }
   }
 
+  function handleRemoveImage() {
+    onChange("");
+  }
+
   return (
     <div className="space-y-3">
-      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-        {label}
-      </label>
+      <div className="flex items-center justify-between">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+          {label}
+        </label>
+        {value && (
+          <button
+            type="button"
+            onClick={handleRemoveImage}
+            className="inline-flex items-center gap-1 text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2.5 py-1 rounded-lg border border-red-500/20 transition cursor-pointer"
+          >
+            <Trash2 size={12} />
+            Remove Image
+          </button>
+        )}
+      </div>
 
       {value && (
-        <img
-          src={value}
-          alt={label}
-          className="h-40 w-full rounded-xl object-cover border border-white/10 bg-white/5"
-        />
+        <div className="relative group overflow-hidden rounded-xl border border-white/10 bg-white/5">
+          <img
+            src={value}
+            alt={label}
+            className="h-40 w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <button
+              type="button"
+              onClick={handleRemoveImage}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-red-500 hover:bg-red-600 px-3 py-1.5 text-xs font-bold text-white shadow-lg transition cursor-pointer"
+            >
+              <Trash2 size={14} />
+              Remove Image
+            </button>
+          </div>
+        </div>
       )}
 
       <input

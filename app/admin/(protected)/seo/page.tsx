@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Globe, Loader2, ChevronRight, CheckCircle2, AlertCircle } from "lucide-react";
 import { getPages } from "@/lib/cms";
+import { CMS_DATA } from "@/data";
 import { PAGE_ROUTES } from "@/lib/page-routes";
 
 type PageItem = {
@@ -20,17 +21,25 @@ export default function SeoPageList() {
 
   useEffect(() => {
     async function init() {
-      const data = await getPages();
-      // Only show pages that are wired to a public route — stray Firestore
-      // docs (e.g. an old "about" next to the real "about-us") would let
-      // admins edit SEO that no page ever reads.
-      const pageList = data.filter((p) => p.id in PAGE_ROUTES).map((p) => ({
-        id: p.id,
-        name: p.name || p.id,
-        slug: p.slug || "",
-        metaTitle: p.metaTitle,
-        metaDescription: p.metaDescription,
-      })).sort((a, b) => a.name.localeCompare(b.name));
+      // Local CMS_DATA is the source of truth so the list works even before the
+      // Firestore `pages` collection is seeded. Firestore page docs, when
+      // present, override name/slug and provide the saved meta title/description.
+      // Only show pages wired to a public route.
+      const fsPages = await getPages();
+      const fsById = new Map(fsPages.map((p) => [p.id, p]));
+
+      const pageList = CMS_DATA.filter((p) => p.pageId in PAGE_ROUTES)
+        .map((p) => {
+          const fs = fsById.get(p.pageId);
+          return {
+            id: p.pageId,
+            name: fs?.name || p.name || p.pageId,
+            slug: fs?.slug || p.slug || PAGE_ROUTES[p.pageId] || "",
+            metaTitle: fs?.metaTitle,
+            metaDescription: fs?.metaDescription,
+          };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
       setPages(pageList);
       setLoading(false);
     }

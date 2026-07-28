@@ -2,7 +2,7 @@ export const footballContent = {
   hero: {
     title: "Euro, Premier League & More",
     description: "Access premium football leagues with top odds.",
-    imageUrl: "",
+    imageUrl: "/football_hero.png",
     imageUrlMobile: "",
     imageAlt: "Football betting",
   },
