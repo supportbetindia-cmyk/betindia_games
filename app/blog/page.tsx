@@ -44,6 +44,7 @@ export default async function BlogPage() {
     title: p.title,
     excerpt: p.excerpt,
     readTime: p.readTime,
+    image: p.coverImage,
     placeholderIcon: nameFromIcon(p.icon),
   }));
 

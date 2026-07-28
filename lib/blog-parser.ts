@@ -11,11 +11,41 @@ export type ParsedArticleResult = {
 };
 
 /**
+ * Auto-detects and converts HTML links, markdown links, and raw URLs (https://, http://, www.)
+ * into standard markdown link format [Label](URL).
+ */
+export function convertUrlsToMarkdown(text: string): string {
+  if (!text) return "";
+  // Convert HTML anchor tags <a href="url">text</a> to markdown [text](url)
+  let result = text.replace(/<a\s+[^>]*href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi, "[$2]($1)");
+
+  // Convert raw standalone URLs (https://, http://, www.) into [url](url) without touching existing markdown links
+  const markdownOrUrlRegex = /\[([^\]]+)\]\(([^)]+)\)|((?:https?:\/\/|www\.)[^\s<]+)/gi;
+
+  return result.replace(markdownOrUrlRegex, (match, mdLabel, mdUrl, rawUrl) => {
+    if (mdLabel && mdUrl) {
+      return match;
+    }
+    if (rawUrl) {
+      let cleanUrl = rawUrl;
+      let trailingPunct = "";
+      if (/[.,;!?]$/.test(cleanUrl)) {
+        trailingPunct = cleanUrl.slice(-1);
+        cleanUrl = cleanUrl.slice(0, -1);
+      }
+      const href = cleanUrl.toLowerCase().startsWith("www.") ? `https://${cleanUrl}` : cleanUrl;
+      return `[${cleanUrl}](${href})${trailingPunct}`;
+    }
+    return match;
+  });
+}
+
+/**
  * Auto-detects headings, paragraphs, title, excerpt, and FAQs from raw pasted text.
  */
 export function parseRawArticleText(rawText: string): ParsedArticleResult {
-  // Convert any HTML anchor tags <a href="url">text</a> to markdown [text](url)
-  const textWithMarkdownLinks = rawText.replace(/<a\s+[^>]*href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi, "[$2]($1)");
+  // Convert any HTML anchor tags, raw URLs (http/https/www), or markdown links
+  const textWithMarkdownLinks = convertUrlsToMarkdown(rawText);
   const trimmed = textWithMarkdownLinks.trim();
   if (!trimmed) {
     return {

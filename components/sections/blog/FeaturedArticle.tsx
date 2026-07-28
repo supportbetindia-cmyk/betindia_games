@@ -40,41 +40,52 @@ export default function FeaturedArticle({ post }: { post: BlogPost }) {
 
           {/* Left — Image / Visual */}
           <div className="relative h-56 overflow-hidden bg-[#081425] lg:h-auto lg:w-[44%] lg:shrink-0">
-            {/* Gradient background */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background: `linear-gradient(135deg, ${accent}28 0%, #081425 55%, #050B18 100%)`,
-              }}
-            />
-            <div
-              className="absolute inset-0"
-              style={{
-                background: `radial-gradient(ellipse at 40% 50%, ${accent}30 0%, transparent 65%)`,
-              }}
-            />
-            {/* Dot grid */}
-            <div
-              className="absolute inset-0 opacity-20"
-              style={{
-                backgroundImage: `radial-gradient(circle, ${accent}45 1px, transparent 1px)`,
-                backgroundSize: "28px 28px",
-              }}
-            />
-            {/* Icon */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div
-                className="relative z-10 grid h-24 w-24 place-items-center rounded-3xl border transition-all duration-500 group-hover:scale-110 group-hover:rotate-3"
-                style={{
-                  background: `${accent}18`,
-                  borderColor: `${accent}35`,
-                  color: accent,
-                  boxShadow: `0 0 48px ${accent}25`,
-                }}
-              >
-                <Icon size={40} strokeWidth={1.4} />
-              </div>
-            </div>
+            {post.coverImage ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={post.coverImage}
+                alt={post.title}
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            ) : (
+              <>
+                {/* Gradient background */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: `linear-gradient(135deg, ${accent}28 0%, #081425 55%, #050B18 100%)`,
+                  }}
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: `radial-gradient(ellipse at 40% 50%, ${accent}30 0%, transparent 65%)`,
+                  }}
+                />
+                {/* Dot grid */}
+                <div
+                  className="absolute inset-0 opacity-20"
+                  style={{
+                    backgroundImage: `radial-gradient(circle, ${accent}45 1px, transparent 1px)`,
+                    backgroundSize: "28px 28px",
+                  }}
+                />
+                {/* Icon */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div
+                    className="relative z-10 grid h-24 w-24 place-items-center rounded-3xl border transition-all duration-500 group-hover:scale-110 group-hover:rotate-3"
+                    style={{
+                      background: `${accent}18`,
+                      borderColor: `${accent}35`,
+                      color: accent,
+                      boxShadow: `0 0 48px ${accent}25`,
+                    }}
+                  >
+                    <Icon size={40} strokeWidth={1.4} />
+                  </div>
+                </div>
+              </>
+            )}
             {/* Featured badge */}
             <div
               className="absolute left-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm"
