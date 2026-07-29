@@ -31,7 +31,7 @@ export default function SportsHero({
     <section className="bg-[#050B18]   md:px-0 md:pt-0">
       {/* Mobile hero poster with HTML text overlaid on the image. */}
       <div className="relative overflow-hidden md:hidden">
-        <img src={mobileHeroImage} alt="" className="h-auto w-full" />
+        <img src={mobileHeroImage} alt="" className="block aspect-[16/9] w-full object-cover" />
 
         {/* Readability gradient behind the text (top area). */}
         <div

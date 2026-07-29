@@ -40,6 +40,90 @@ export function convertUrlsToMarkdown(text: string): string {
   });
 }
 
+/** Counts [Label](URL) markdown links in a piece of text. */
+export function countMarkdownLinks(text: string): number {
+  if (!text) return 0;
+  return (text.match(/\[[^\]]+\]\([^)]+\)/g) || []).length;
+}
+
+const SKIP_TAGS = new Set(["style", "script", "head", "meta", "title", "noscript", "img", "svg"]);
+
+function inlineText(node: Node): string {
+  if (node.nodeType === Node.TEXT_NODE) return (node.textContent || "").replace(/\s+/g, " ");
+  if (node.nodeType !== Node.ELEMENT_NODE) return "";
+  const el = node as HTMLElement;
+  const tag = el.tagName.toLowerCase();
+  if (SKIP_TAGS.has(tag)) return "";
+  if (tag === "br") return "\n";
+  const inner = Array.from(el.childNodes).map(inlineText).join("");
+  if (tag === "a") {
+    const href = (el.getAttribute("href") || "").trim();
+    const label = inner.replace(/\s+/g, " ").trim();
+    // Skip in-page anchors (footnotes, TOC jumps) — keep just their text.
+    if (!href || href.startsWith("#")) return inner;
+    return label ? `[${label}](${href})` : href;
+  }
+  return inner;
+}
+
+function serializeBlocks(el: Element, out: string[]): void {
+  Array.from(el.childNodes).forEach((node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const t = (node.textContent || "").replace(/\s+/g, " ").trim();
+      if (t) out.push(t);
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    const child = node as HTMLElement;
+    const tag = child.tagName.toLowerCase();
+    if (SKIP_TAGS.has(tag)) return;
+
+    const headingMatch = tag.match(/^h([1-6])$/);
+    if (headingMatch) {
+      const t = inlineText(child).trim();
+      if (t) out.push("#".repeat(Number(headingMatch[1])) + " " + t);
+      return;
+    }
+    if (tag === "ul" || tag === "ol") {
+      const items: string[] = [];
+      Array.from(child.children).forEach((li) => {
+        if (li.tagName.toLowerCase() !== "li") return;
+        const t = inlineText(li).trim();
+        if (t) items.push("- " + t);
+      });
+      if (items.length) out.push(items.join("\n"));
+      return;
+    }
+    if (tag === "p") {
+      const t = inlineText(child).trim();
+      if (t) out.push(t);
+      return;
+    }
+    // Containers (div, section, td, blockquote, Google Docs <b> wrappers, ...):
+    // recurse when they hold block children, otherwise treat as one paragraph.
+    if (child.querySelector("p, h1, h2, h3, h4, h5, h6, ul, ol, div, table, blockquote")) {
+      serializeBlocks(child, out);
+    } else {
+      const t = inlineText(child).trim();
+      if (t) out.push(t);
+    }
+  });
+}
+
+/**
+ * Converts pasted rich-text HTML (Google Docs, Word, web pages) into plain
+ * article text that keeps its structure: <h1-6> become # headings, <a> tags
+ * become [Label](URL) markdown links, and <li> items become "- " bullets.
+ * Without this, pasting into a textarea silently drops every link.
+ */
+export function htmlToArticleText(html: string): string {
+  if (!html || typeof DOMParser === "undefined") return "";
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const out: string[] = [];
+  serializeBlocks(doc.body, out);
+  return out.join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
 /**
  * Auto-detects headings, paragraphs, title, excerpt, and FAQs from raw pasted text.
  */

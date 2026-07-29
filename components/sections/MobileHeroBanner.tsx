@@ -39,12 +39,12 @@ export default function MobileHeroBanner({
   return (
     <div className="bg-[#050B18] md:hidden">
       <div className="relative overflow-hidden">
-        {/* The image. If a page hasn't set one yet, show a portrait placeholder
+        {/* The image (16:9 aspect ratio). If a page hasn't set one yet, show a 16:9 placeholder
             so the overlay text still has something to sit on. */}
         {image ? (
-          <img src={image} alt="" className="block h-auto w-full" />
+          <img src={image} alt="" className="block aspect-[16/9] w-full object-cover" />
         ) : (
-          <div className="aspect-[3/4] w-full bg-[#0A1121]" />
+          <div className="aspect-[16/9] w-full bg-[#0A1121]" />
         )}
 
         {/* Readability gradient over the top area where the text sits. */}

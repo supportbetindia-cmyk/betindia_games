@@ -19,17 +19,41 @@ import {
   ChevronUp,
   Link2 as LinkIcon,
   ExternalLink,
+  Settings2,
 } from "lucide-react";
 import { getAdminPost, savePost, type AdminPost, type Accent } from "@/lib/blog-admin";
 import { BLOG_ICONS } from "@/lib/blog-icons";
 import ImageField from "@/app/admin/component/cms/ImageField";
-import { parseRawArticleText, SAMPLE_PASTE_TEXT, type ParsedArticleResult } from "@/lib/blog-parser";
+import {
+  parseRawArticleText,
+  htmlToArticleText,
+  countMarkdownLinks,
+  SAMPLE_PASTE_TEXT,
+  type ParsedArticleResult,
+} from "@/lib/blog-parser";
 import { revalidateBlog } from "../actions";
 
 type FormState = Omit<AdminPost, "tags" | "relatedSlugs"> & {
   tagsInput: string;
   relatedSlugsInput: string;
 };
+
+function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-");
+}
+
+function computeReadTime(sections: AdminPost["sections"]) {
+  const words = sections
+    .map((s) => [s.heading, s.content, s.tip || "", ...(s.bullets || [])].join(" "))
+    .join(" ")
+    .split(/\s+/)
+    .filter(Boolean).length;
+  return `${Math.max(1, Math.ceil(words / 200))} min read`;
+}
 
 export default function BlogPostEditor() {
   const { slug } = useParams();
@@ -57,6 +81,16 @@ export default function BlogPostEditor() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Per-section collapsed state, index-aligned with form.sections. Collapsed
+  // sections render as a compact summary row so long posts don't force scrolling.
+  const [collapsedSections, setCollapsedSections] = useState<boolean[]>([]);
+
+  // Expert-only fields (slug, icon, order, ...) hide behind this toggle so the
+  // default form stays simple. Everything in there gets a sensible default.
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  // Once someone edits the slug by hand, stop auto-deriving it from the title.
+  const [slugEdited, setSlugEdited] = useState(false);
 
   // Auto-detect parser state
   const [showParser, setShowParser] = useState(isNew);
@@ -143,10 +177,32 @@ export default function BlogPostEditor() {
     setLinkModal((prev) => ({ ...prev, isOpen: false }));
   }
 
-  function handleAutoDetect() {
-    if (!rawText.trim()) return;
-    const result = parseRawArticleText(rawText);
-    setParsedResult(result);
+  // Total markdown links the parser found — surfaced in the Detection Summary
+  // so it's obvious the links survived the paste.
+  const parsedLinkCount = parsedResult
+    ? parsedResult.sections.reduce(
+        (n, s) =>
+          n +
+          countMarkdownLinks(s.content) +
+          (s.bullets || []).reduce((m, b) => m + countMarkdownLinks(b), 0),
+        0
+      )
+    : 0;
+
+  const allSectionsCollapsed =
+    form.sections.length > 0 && form.sections.every((_, i) => collapsedSections[i]);
+
+  // If the clipboard carries rich HTML (Google Docs, Word, a web page), convert
+  // it to structured text so headings become "#" lines and links become
+  // [Label](URL) — a plain textarea paste would silently drop every link.
+  function richPasteToText(e: React.ClipboardEvent<HTMLTextAreaElement>): string | null {
+    const html = e.clipboardData.getData("text/html");
+    if (!html) return null;
+    return htmlToArticleText(html) || null;
+  }
+
+  function insertAtSelection(el: HTMLTextAreaElement, current: string, insert: string) {
+    return current.slice(0, el.selectionStart) + insert + current.slice(el.selectionEnd);
   }
 
   function handleLoadSample() {
@@ -169,7 +225,14 @@ export default function BlogPostEditor() {
       sections: parsedResult.sections.length > 0 ? parsedResult.sections : prev.sections,
     }));
 
-    setParserNotice(`Successfully auto-detected and populated Title, Slug, Category, Excerpt, Read Time, Tags, and ${parsedResult.sections.length} Sections!`);
+    if (parsedResult.sections.length > 0) {
+      setCollapsedSections(parsedResult.sections.map(() => true));
+    }
+
+    setParserNotice(
+      `Applied Title, Slug, Category, Excerpt, Read Time, Tags and ${parsedResult.sections.length} Sections` +
+        (parsedLinkCount > 0 ? ` — ${parsedLinkCount} link${parsedLinkCount > 1 ? "s" : ""} preserved!` : "!")
+    );
     setTimeout(() => setParserNotice(null), 8000);
   }
 
@@ -190,6 +253,8 @@ export default function BlogPostEditor() {
           tagsInput: post.tags.join(", "),
           relatedSlugsInput: post.relatedSlugs.join(", "),
         });
+        // Start compact: existing sections open on demand.
+        setCollapsedSections(post.sections.map(() => true));
       } catch (err) {
         console.error("Failed to load post", err);
         setError("Error loading post data.");
@@ -214,6 +279,7 @@ export default function BlogPostEditor() {
         { heading: "", content: "", bullets: [], tip: "", image: "" },
       ],
     }));
+    setCollapsedSections((prev) => [...prev, false]);
   }
 
   function handleRemoveSection(index: number) {
@@ -221,6 +287,15 @@ export default function BlogPostEditor() {
       ...prev,
       sections: prev.sections.filter((_, i) => i !== index),
     }));
+    setCollapsedSections((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function toggleSectionCollapsed(index: number) {
+    setCollapsedSections((prev) => {
+      const next = [...prev];
+      next[index] = !next[index];
+      return next;
+    });
   }
 
   function handleSectionChange(index: number, key: string, value: any) {
@@ -242,6 +317,13 @@ export default function BlogPostEditor() {
       sections[targetIndex] = temp;
 
       return { ...prev, sections };
+    });
+    setCollapsedSections((prev) => {
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= prev.length) return prev;
+      const next = [...prev];
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+      return next;
     });
   }
 
@@ -281,22 +363,22 @@ export default function BlogPostEditor() {
     e.preventDefault();
     setError(null);
 
-    // Form validations
-    const cleanSlug = form.slug.trim().toLowerCase();
+    // Form validations — title first, since the slug auto-derives from it.
+    if (!form.title.trim()) {
+      setError("Please add a Title before saving.");
+      return;
+    }
+    const cleanSlug = (form.slug.trim() || slugify(form.title)).toLowerCase();
     if (!cleanSlug) {
-      setError("Slug is required.");
+      setError("Could not build a web address from this title — set one under Advanced Settings.");
       return;
     }
     if (!/^[a-z0-9-_]+$/.test(cleanSlug)) {
-      setError("Slug can only contain lowercase letters, numbers, dashes, and underscores.");
+      setError("The web address (slug) can only contain lowercase letters, numbers, and dashes — fix it under Advanced Settings.");
       return;
     }
     if (cleanSlug === "new") {
-      setError("The slug 'new' is reserved. Please choose a different slug.");
-      return;
-    }
-    if (!form.title.trim()) {
-      setError("Title is required.");
+      setError("The web address 'new' is reserved. Please choose a different one under Advanced Settings.");
       return;
     }
 
@@ -314,14 +396,23 @@ export default function BlogPostEditor() {
         .map((s) => s.trim())
         .filter(Boolean);
 
+      // Anything left blank gets a sensible default, so the advanced fields
+      // can be ignored entirely.
       const finalPost: AdminPost = {
         slug: cleanSlug,
         title: form.title.trim(),
-        category: form.category.trim(),
+        category: form.category.trim() || "General",
         accent: form.accent,
-        excerpt: form.excerpt.trim(),
-        readTime: form.readTime.trim(),
-        publishDate: form.publishDate.trim(),
+        excerpt:
+          form.excerpt.trim() ||
+          (form.sections[0]?.content || "")
+            .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+            .slice(0, 160)
+            .trim(),
+        readTime: form.readTime.trim() || computeReadTime(form.sections),
+        publishDate:
+          form.publishDate.trim() ||
+          new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
         icon: form.icon,
         coverImage: form.coverImage.trim(),
         published: form.published,
@@ -388,14 +479,11 @@ export default function BlogPostEditor() {
               <Wand2 size={20} />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-                Auto-Detect Headings & Content Importer
-                <span className="rounded-full bg-[#FF6B00]/20 border border-[#FF6B00]/40 px-2.5 py-0.5 text-[10px] font-bold text-[#FF6B00]">
-                  AI Smart Parser
-                </span>
+              <h2 className="text-base font-extrabold text-white">
+                Paste Your Article — Everything Fills In Automatically
               </h2>
               <p className="text-xs text-slate-400">
-                Paste any raw article text with mixed headings, paragraphs, and FAQs. It automatically detects title, headings, paragraphs, excerpt, tags, and read time.
+                Copy your article from Google Docs, Word, or anywhere else and paste it below. The title, headings, paragraphs, and links are picked up for you — then press the orange button.
               </p>
             </div>
           </div>
@@ -444,33 +532,33 @@ export default function BlogPostEditor() {
                     setParsedResult(null);
                   }
                 }}
+                onPaste={(e) => {
+                  const converted = richPasteToText(e);
+                  if (!converted) return;
+                  e.preventDefault();
+                  const next = insertAtSelection(e.currentTarget, rawText, converted);
+                  setRawText(next);
+                  setParsedResult(next.trim() ? parseRawArticleText(next) : null);
+                }}
                 rows={8}
                 className="w-full rounded-xl border border-white/15 bg-[#030810]/80 p-4 text-xs font-mono leading-relaxed text-slate-200 outline-none focus:border-[#FF6B00] transition resize-y"
               />
+              <p className="text-[11px] text-slate-500">
+                Tip: paste straight from Google Docs, Word, or a webpage — headings and hyperlinks are preserved automatically as [Link Text](URL).
+              </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            {parsedResult && parsedResult.sections.length > 0 && (
               <button
                 type="button"
-                onClick={handleAutoDetect}
-                disabled={!rawText.trim()}
-                className="inline-flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 px-4 py-2.5 text-xs font-bold text-white transition disabled:opacity-40 cursor-pointer"
+                onClick={handleApplyParsedResult}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#FF6B00] hover:bg-[#FF8A00] px-5 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-[#FF6B00]/20 transition cursor-pointer"
               >
-                <Wand2 size={14} className="text-[#FF6B00]" />
-                Auto-Detect Headings & Content
+                <CheckCircle2 size={14} />
+                Use This Article ({parsedResult.sections.length} sections
+                {parsedLinkCount > 0 ? `, ${parsedLinkCount} links` : ""})
               </button>
-
-              {parsedResult && parsedResult.sections.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleApplyParsedResult}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#FF6B00] hover:bg-[#FF8A00] px-5 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-[#FF6B00]/20 transition cursor-pointer"
-                >
-                  <CheckCircle2 size={14} />
-                  Apply Auto-Detected Content ({parsedResult.sections.length} Sections)
-                </button>
-              )}
-            </div>
+            )}
 
             {/* Parsed Result Preview */}
             {parsedResult && (
@@ -504,22 +592,39 @@ export default function BlogPostEditor() {
                     <span className="block text-slate-500 font-medium">Tags:</span>
                     <span className="text-slate-300">{parsedResult.tags.join(", ") || "None"}</span>
                   </div>
+
+                  <div>
+                    <span className="block text-slate-500 font-medium">Links Detected:</span>
+                    <span className={parsedLinkCount > 0 ? "font-bold text-emerald-400" : "text-slate-300"}>
+                      {parsedLinkCount > 0
+                        ? `${parsedLinkCount} link${parsedLinkCount > 1 ? "s" : ""} preserved as [Text](URL)`
+                        : "None found"}
+                    </span>
+                  </div>
                 </div>
 
                 <div>
                   <span className="block text-slate-500 font-medium mb-1">Detected Headings ({parsedResult.sections.length}):</span>
                   <div className="max-h-48 overflow-y-auto space-y-1.5 rounded-lg border border-white/5 bg-white/[0.02] p-2.5">
-                    {parsedResult.sections.map((sec, idx) => (
-                      <div key={idx} className="flex items-start justify-between gap-2 text-[11px] border-b border-white/[0.03] pb-1 last:border-0">
-                        <span className="font-bold text-slate-200">
-                          {sec.heading}
-                        </span>
-                        <span className="shrink-0 text-[10px] text-slate-500 font-mono">
-                          {sec.content.split(/\n\n+/).filter(Boolean).length} para(s)
-                          {sec.bullets ? `, ${sec.bullets.length} bullets` : ""}
-                        </span>
-                      </div>
-                    ))}
+                    {parsedResult.sections.map((sec, idx) => {
+                      const sectionLinks =
+                        countMarkdownLinks(sec.content) +
+                        (sec.bullets || []).reduce((n, b) => n + countMarkdownLinks(b), 0);
+                      return (
+                        <div key={idx} className="flex items-start justify-between gap-2 text-[11px] border-b border-white/[0.03] pb-1 last:border-0">
+                          <span className="font-bold text-slate-200">
+                            {sec.heading}
+                          </span>
+                          <span className="shrink-0 text-[10px] text-slate-500 font-mono">
+                            {sec.content.split(/\n\n+/).filter(Boolean).length} para(s)
+                            {sec.bullets ? `, ${sec.bullets.length} bullets` : ""}
+                            {sectionLinks > 0 && (
+                              <span className="text-emerald-400">{`, ${sectionLinks} link${sectionLinks > 1 ? "s" : ""}`}</span>
+                            )}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -532,31 +637,11 @@ export default function BlogPostEditor() {
         {/* Core Metadata Fields */}
         <div className="rounded-2xl border border-white/[0.07] bg-white/[0.04] p-6 backdrop-blur-xl space-y-6">
           <h2 className="text-lg font-bold text-white border-b border-white/[0.05] pb-3">
-            Article Details
+            Article Basics
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Slug */}
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Slug (URL Path)
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. ipl-betting-guide"
-                value={form.slug}
-                disabled={!isNew}
-                onChange={(e) => handleChange("slug", e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-              {isNew && (
-                <p className="text-[10px] text-slate-500 font-medium">
-                  Use only lowercase letters, numbers, and dashes. Read-only after creation.
-                </p>
-              )}
-            </div>
-
-            {/* Title */}
+            {/* Title (slug auto-derives from it for new posts) */}
             <div className="space-y-2">
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                 Title
@@ -565,9 +650,21 @@ export default function BlogPostEditor() {
                 type="text"
                 placeholder="Article title"
                 value={form.title}
-                onChange={(e) => handleChange("title", e.target.value)}
+                onChange={(e) => {
+                  const title = e.target.value;
+                  setForm((prev) => ({
+                    ...prev,
+                    title,
+                    slug: isNew && !slugEdited ? slugify(title) : prev.slug,
+                  }));
+                }}
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition"
               />
+              {isNew && form.slug && (
+                <p className="text-[10px] text-slate-500 font-medium">
+                  Will publish at <span className="font-mono text-slate-400">/blog/{form.slug}</span> — change it under Advanced Settings.
+                </p>
+              )}
             </div>
 
             {/* Category */}
@@ -583,88 +680,13 @@ export default function BlogPostEditor() {
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition"
               />
             </div>
-
-            {/* Accent Color */}
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Accent Theme Color
-              </label>
-              <select
-                value={form.accent}
-                onChange={(e) => handleChange("accent", e.target.value as Accent)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition [&>option]:bg-[#030810]"
-              >
-                <option value="#FF6B00">Orange (#FF6B00)</option>
-                <option value="#138808">Green (#138808)</option>
-              </select>
-            </div>
-
-            {/* Read Time */}
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Read Time
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. 5 min read"
-                value={form.readTime}
-                onChange={(e) => handleChange("readTime", e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition"
-              />
-            </div>
-
-            {/* Publish Date */}
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Publish Date
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. June 2026"
-                value={form.publishDate}
-                onChange={(e) => handleChange("publishDate", e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition"
-              />
-            </div>
-
-            {/* Icon */}
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Icon
-              </label>
-              <select
-                value={form.icon}
-                onChange={(e) => handleChange("icon", e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition [&>option]:bg-[#030810]"
-              >
-                {Object.keys(BLOG_ICONS).map((iconName) => (
-                  <option key={iconName} value={iconName}>
-                    {iconName}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Order */}
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Sort Order
-              </label>
-              <input
-                type="number"
-                placeholder="0"
-                value={form.order}
-                onChange={(e) => handleChange("order", parseInt(e.target.value) || 0)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition"
-              />
-            </div>
           </div>
 
           {/* Excerpt */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Excerpt (Summary for SEO)
+                Short Summary (Optional — auto-written from the first paragraph if left empty)
               </label>
               <button
                 type="button"
@@ -690,36 +712,6 @@ export default function BlogPostEditor() {
             value={form.coverImage}
             onChange={(url: string) => handleChange("coverImage", url)}
           />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Tags */}
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Tags (Comma separated)
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. IPL 2026, Cricket, Betting"
-                value={form.tagsInput}
-                onChange={(e) => handleChange("tagsInput", e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition"
-              />
-            </div>
-
-            {/* Related Slugs */}
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Related Article Slugs (Comma separated)
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. cricket-betting-guide, live-betting-guide"
-                value={form.relatedSlugsInput}
-                onChange={(e) => handleChange("relatedSlugsInput", e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition"
-              />
-            </div>
-          </div>
 
           {/* Visibility and Featured flags */}
           <div className="flex flex-wrap gap-6 pt-3">
@@ -749,6 +741,158 @@ export default function BlogPostEditor() {
               </div>
             </label>
           </div>
+
+          {/* Advanced settings — optional; everything here has an auto default */}
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02]">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((v) => !v)}
+              className="flex w-full items-center justify-between gap-3 px-4 py-3 cursor-pointer"
+            >
+              <span className="flex items-center gap-2 text-sm font-bold text-slate-300">
+                <Settings2 size={15} className="text-slate-500" />
+                Advanced Settings
+                <span className="text-[10px] font-medium text-slate-500">
+                  (optional — filled in automatically if you skip them)
+                </span>
+              </span>
+              {showAdvanced ? (
+                <ChevronUp size={14} className="text-slate-500" />
+              ) : (
+                <ChevronDown size={14} className="text-slate-500" />
+              )}
+            </button>
+
+            {showAdvanced && (
+              <div className="grid grid-cols-1 gap-6 border-t border-white/[0.04] p-4 md:grid-cols-2">
+                {/* Slug */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Web Address (Slug)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. ipl-betting-guide"
+                    value={form.slug}
+                    disabled={!isNew}
+                    onChange={(e) => {
+                      setSlugEdited(true);
+                      handleChange("slug", e.target.value);
+                    }}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <p className="text-[10px] text-slate-500 font-medium">
+                    {isNew
+                      ? "Auto-created from the title. Lowercase letters, numbers, and dashes only."
+                      : "The web address can't change after the post is created."}
+                  </p>
+                </div>
+
+                {/* Tags */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Tags (Comma separated)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. IPL 2026, Cricket, Betting"
+                    value={form.tagsInput}
+                    onChange={(e) => handleChange("tagsInput", e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition"
+                  />
+                </div>
+
+                {/* Read Time */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Read Time (auto-calculated if empty)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 5 min read"
+                    value={form.readTime}
+                    onChange={(e) => handleChange("readTime", e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition"
+                  />
+                </div>
+
+                {/* Publish Date */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Publish Date (auto-set to this month if empty)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. June 2026"
+                    value={form.publishDate}
+                    onChange={(e) => handleChange("publishDate", e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition"
+                  />
+                </div>
+
+                {/* Accent Color */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Accent Theme Color
+                  </label>
+                  <select
+                    value={form.accent}
+                    onChange={(e) => handleChange("accent", e.target.value as Accent)}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition [&>option]:bg-[#030810]"
+                  >
+                    <option value="#FF6B00">Orange (#FF6B00)</option>
+                    <option value="#138808">Green (#138808)</option>
+                  </select>
+                </div>
+
+                {/* Icon */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Icon
+                  </label>
+                  <select
+                    value={form.icon}
+                    onChange={(e) => handleChange("icon", e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition [&>option]:bg-[#030810]"
+                  >
+                    {Object.keys(BLOG_ICONS).map((iconName) => (
+                      <option key={iconName} value={iconName}>
+                        {iconName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Order */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Sort Order
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={form.order}
+                    onChange={(e) => handleChange("order", parseInt(e.target.value) || 0)}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition"
+                  />
+                </div>
+
+                {/* Related Slugs */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Related Article Slugs (Comma separated)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. cricket-betting-guide, live-betting-guide"
+                    value={form.relatedSlugsInput}
+                    onChange={(e) => handleChange("relatedSlugsInput", e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Dynamic Sections list */}
@@ -763,14 +907,26 @@ export default function BlogPostEditor() {
                 Add one or more headings and details to construct the body of this blog post.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={handleAddSection}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[#FF6B00]/30 bg-[#FF6B00]/10 hover:bg-[#FF6B00]/20 px-3 py-1.5 text-xs font-bold text-[#FF6B00] transition cursor-pointer"
-            >
-              <Plus size={14} />
-              Add Section
-            </button>
+            <div className="flex items-center gap-2">
+              {form.sections.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setCollapsedSections(form.sections.map(() => !allSectionsCollapsed))}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 px-3 py-1.5 text-xs font-bold text-slate-300 transition cursor-pointer"
+                >
+                  {allSectionsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                  {allSectionsCollapsed ? "Expand All" : "Collapse All"}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleAddSection}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[#FF6B00]/30 bg-[#FF6B00]/10 hover:bg-[#FF6B00]/20 px-3 py-1.5 text-xs font-bold text-[#FF6B00] transition cursor-pointer"
+              >
+                <Plus size={14} />
+                Add Section
+              </button>
+            </div>
           </div>
 
           {form.sections.length === 0 ? (
@@ -779,16 +935,42 @@ export default function BlogPostEditor() {
             </div>
           ) : (
             <div className="space-y-6">
-              {form.sections.map((section, index) => (
+              {form.sections.map((section, index) => {
+                const isCollapsed = collapsedSections[index] === true;
+                const sectionLinks =
+                  countMarkdownLinks(section.content) +
+                  countMarkdownLinks(section.tip || "") +
+                  (section.bullets || []).reduce((n, b) => n + countMarkdownLinks(b), 0);
+                const paraCount = (section.content || "").split(/\n\n+/).filter(Boolean).length;
+                return (
                 <div
                   key={index}
                   className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-4"
                 >
-                  <div className="flex items-center justify-between border-b border-white/[0.04] pb-2.5">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">
-                      Section #{index + 1}
-                    </span>
-                    <div className="flex items-center gap-2">
+                  <div className={`flex items-center justify-between gap-3 ${isCollapsed ? "" : "border-b border-white/[0.04] pb-2.5"}`}>
+                    <button
+                      type="button"
+                      onClick={() => toggleSectionCollapsed(index)}
+                      className="flex min-w-0 flex-1 items-center gap-2.5 text-left cursor-pointer"
+                      title={isCollapsed ? "Expand section" : "Collapse section"}
+                    >
+                      {isCollapsed ? (
+                        <ChevronDown size={14} className="shrink-0 text-slate-500" />
+                      ) : (
+                        <ChevronUp size={14} className="shrink-0 text-slate-500" />
+                      )}
+                      <span className="shrink-0 text-xs font-bold text-slate-400 uppercase tracking-wide">
+                        #{index + 1}
+                      </span>
+                      <span className="truncate text-sm font-bold text-white">
+                        {section.heading || <span className="font-medium italic text-slate-500">Untitled section</span>}
+                      </span>
+                      <span className="hidden shrink-0 font-mono text-[10px] text-slate-500 sm:block">
+                        {paraCount} para{section.bullets?.length ? ` · ${section.bullets.length} bullets` : ""}
+                        {sectionLinks > 0 && <span className="text-emerald-400">{` · ${sectionLinks} link${sectionLinks > 1 ? "s" : ""}`}</span>}
+                      </span>
+                    </button>
+                    <div className="flex shrink-0 items-center gap-2">
                       <button
                         type="button"
                         onClick={() => handleMoveSection(index, "up")}
@@ -815,6 +997,7 @@ export default function BlogPostEditor() {
                     </div>
                   </div>
 
+                  {!isCollapsed && (
                   <div className="grid grid-cols-1 gap-4">
                     {/* Section Heading */}
                     <div className="space-y-1.5">
@@ -834,7 +1017,7 @@ export default function BlogPostEditor() {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                          Content (Paragraph Body)
+                          Paragraph Text
                         </label>
                         <button
                           type="button"
@@ -849,6 +1032,16 @@ export default function BlogPostEditor() {
                         placeholder="Write paragraph content here... (Tip: use [Link Text](URL) to format links)"
                         value={section.content}
                         onChange={(e) => handleSectionChange(index, "content", e.target.value)}
+                        onPaste={(e) => {
+                          const converted = richPasteToText(e);
+                          if (!converted) return;
+                          e.preventDefault();
+                          handleSectionChange(
+                            index,
+                            "content",
+                            insertAtSelection(e.currentTarget, section.content || "", converted)
+                          );
+                        }}
                         rows={6}
                         className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition resize-y"
                       />
@@ -858,7 +1051,7 @@ export default function BlogPostEditor() {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                          Special Callout/Tip (Optional)
+                          Tip / Highlight Box (Optional)
                         </label>
                         <button
                           type="button"
@@ -935,28 +1128,39 @@ export default function BlogPostEditor() {
                       )}
                     </div>
                   </div>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* Submit */}
-        <div className="flex items-center gap-4">
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#FF6B00] hover:bg-[#FF8A00] px-4 py-3.5 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer shadow-lg shadow-[#FF6B00]/20"
-          >
-            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            {saving ? "Saving Post Data…" : "Save Blog Post"}
-          </button>
+        {/* Sticky save bar — always visible, no scrolling to the bottom needed */}
+        <div className="sticky bottom-4 z-20 flex items-center gap-3 rounded-2xl border border-white/10 bg-[#070F22]/95 px-4 py-3 shadow-2xl shadow-black/50 backdrop-blur-xl">
+          <span className="hidden min-w-0 flex-1 truncate text-xs font-medium text-slate-500 sm:block">
+            {error ? (
+              <span className="font-semibold text-red-300">{error}</span>
+            ) : (
+              `${form.sections.length} section${form.sections.length === 1 ? "" : "s"} · ${
+                form.published ? "publishes on save" : "saves as draft"
+              }`
+            )}
+          </span>
           <Link
             href="/admin/posts"
-            className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 px-6 py-3.5 text-sm font-bold text-slate-300 transition"
+            className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 px-5 py-2.5 text-sm font-bold text-slate-300 transition"
           >
             Cancel
           </Link>
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex items-center justify-center gap-2 rounded-xl bg-[#FF6B00] hover:bg-[#FF8A00] px-6 py-2.5 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer shadow-lg shadow-[#FF6B00]/20"
+          >
+            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            {saving ? "Saving…" : "Save Blog Post"}
+          </button>
         </div>
       </form>
 
