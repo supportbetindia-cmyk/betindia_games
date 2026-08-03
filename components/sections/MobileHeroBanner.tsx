@@ -38,30 +38,29 @@ export default function MobileHeroBanner({
 }) {
   return (
     <div className="bg-[#050B18] md:hidden">
-      <div className="relative overflow-hidden">
-        {/* The image (16:9 aspect ratio). If a page hasn't set one yet, show a 16:9 placeholder
-            so the overlay text still has something to sit on. */}
+      <div className="relative flex min-h-[580px] w-full items-start justify-center overflow-hidden pt-6 sm:min-h-[650px] sm:pt-10">
+        {/* Full height background image with object-cover */}
         {image ? (
-          <img src={image} alt="" className="block aspect-[16/9] w-full object-cover" />
+          <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover object-top sm:object-center" />
         ) : (
-          <div className="aspect-[16/9] w-full bg-[#0A1121]" />
+          <div className="absolute inset-0 h-full w-full bg-[#0A1121]" />
         )}
 
-        {/* Readability gradient over the top area where the text sits. */}
+        {/* Readability gradient overlay over image. */}
         <div
           aria-hidden
-          className="absolute inset-x-0 top-0 z-[1] h-1/2 bg-gradient-to-b from-[#050B18]/85 via-[#050B18]/40 to-transparent"
+          className="absolute inset-0 z-[1] bg-gradient-to-b from-[#050B18]/90 via-[#050B18]/50 to-[#050B18]/90"
         />
 
-        {/* Centered text overlay. */}
-        <div className="absolute inset-x-0 top-10 z-10 flex flex-col items-center px-5 pt-6 text-center">
+        {/* Centered text overlay positioned near the top. */}
+        <div className="relative z-10 flex w-full max-w-md flex-col items-center px-5 pt-2 pb-6 text-center">
           {eyebrow ? (
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF6B00]!">
               {eyebrow}
             </p>
           ) : null}
 
-          <h1 className="mt-1 text-2xl! font-extrabold leading-tight! tracking-tight text-white">
+          <h1 className="mt-1 text-2xl! font-extrabold leading-tight! tracking-tight text-white sm:text-3xl!">
             {title}
             {highlightedTitle ? (
               <>
@@ -72,17 +71,17 @@ export default function MobileHeroBanner({
           </h1>
 
           {description ? (
-            <p className="mt-2 max-w-[80%] text-xs leading-snug text-slate-200">
+            <p className="mt-2 max-w-[90%] text-xs leading-relaxed text-slate-200 sm:text-sm">
               {description}
             </p>
           ) : null}
 
           {/* Both CTAs side by side, mirroring the desktop hero. */}
-          <div className="mt-3 flex flex-row flex-wrap items-center justify-center gap-2">
+          <div className="mt-4 flex flex-row flex-wrap items-center justify-center gap-2.5">
             {primaryHref ? (
               <Link
                 href={primaryHref}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#FF6B00] px-4 py-2 text-xs font-bold text-white shadow-lg shadow-[#FF6B00]/25 transition-all duration-300 hover:bg-[#FF8A00]"
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#FF6B00] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#FF6B00]/25 transition-all duration-300 hover:bg-[#FF8A00]"
               >
                 {primaryLabel}
                 <span aria-hidden>&rarr;</span>
@@ -91,7 +90,7 @@ export default function MobileHeroBanner({
             {secondaryHref && secondaryLabel ? (
               <a
                 href={secondaryHref}
-                className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white backdrop-blur-md transition-all duration-300 hover:border-[#FF6B00] hover:bg-white/10"
+                className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-bold text-white backdrop-blur-md transition-all duration-300 hover:border-[#FF6B00] hover:bg-white/10"
               >
                 {secondaryLabel}
               </a>

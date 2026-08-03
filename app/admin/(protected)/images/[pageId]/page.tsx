@@ -9,6 +9,7 @@ import { CMS_DATA } from "@/data";
 import { revalidateSeo } from "../../seo/actions";
 import ImageField from "../../../component/cms/ImageField";
 import { humanize } from "../../../component/cms/dynamic/utils";
+import { useToast, ToastHost } from "@/components/admin/Toast";
 
 // Image-URL / alt fields to surface in this editor.
 const IMAGE_KEY = /(image|img|photo|banner|thumbnail|picture|logo|cover|avatar)/i;
@@ -100,6 +101,7 @@ export default function PageImageEditor() {
   const [pageName, setPageName] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { toast, showToast, dismissToast } = useToast();
 
   useEffect(() => {
     if (!pageId) return;
@@ -149,10 +151,11 @@ export default function PageImageEditor() {
     }
     setSaving(false);
     if (ok) {
-      alert("Images Saved!");
-      router.push("/admin/images");
+      showToast("success", "Images saved.");
+      // Give the toast a beat to register before leaving the page.
+      setTimeout(() => router.push("/admin/images"), 900);
     } else {
-      alert("Failed to save some images.");
+      showToast("error", "Some images could not be saved. Please try again.");
     }
   }
 
@@ -172,6 +175,8 @@ export default function PageImageEditor() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 text-white">
+      <ToastHost toast={toast} onDismiss={dismissToast} />
+
       <Link
         href="/admin/images"
         className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-400 transition hover:text-white"

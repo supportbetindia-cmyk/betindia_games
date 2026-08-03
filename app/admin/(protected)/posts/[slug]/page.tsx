@@ -32,6 +32,7 @@ import {
   type ParsedArticleResult,
 } from "@/lib/blog-parser";
 import { revalidateBlog } from "../actions";
+import { useToast, ToastHost } from "@/components/admin/Toast";
 
 type FormState = Omit<AdminPost, "tags" | "relatedSlugs"> & {
   tagsInput: string;
@@ -81,6 +82,7 @@ export default function BlogPostEditor() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast, showToast, dismissToast } = useToast();
 
   // Per-section collapsed state, index-aligned with form.sections. Collapsed
   // sections render as a compact summary row so long posts don't force scrolling.
@@ -425,11 +427,18 @@ export default function BlogPostEditor() {
 
       await savePost(finalPost, isNew);
       await revalidateBlog(cleanSlug);
-      alert("Post saved successfully!");
-      router.push("/admin/posts");
+      showToast(
+        "success",
+        form.published ? "Post saved and published." : "Post saved as a draft."
+      );
+      // Give the toast a beat to register before leaving the page.
+      setTimeout(() => router.push("/admin/posts"), 900);
     } catch (err) {
       console.error("Failed to save post", err);
-      setError(err instanceof Error ? err.message : "Failed to save post. Please check console.");
+      const message =
+        err instanceof Error ? err.message : "Could not save the post. Please try again.";
+      setError(message);
+      showToast("error", message);
     } finally {
       setSaving(false);
     }
@@ -1163,6 +1172,8 @@ export default function BlogPostEditor() {
           </button>
         </div>
       </form>
+
+      <ToastHost toast={toast} onDismiss={dismissToast} />
 
       {/* Hyperlink Insertion Modal */}
       {linkModal.isOpen && (

@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ChevronLeft, Loader2, Save } from "lucide-react";
 import { getPageMeta, savePageMeta } from "@/lib/cms";
 import { revalidateSeo } from "../actions";
+import { useToast, ToastHost } from "@/components/admin/Toast";
 
 function formatLabel(id: string) {
   return id
@@ -25,6 +26,7 @@ export default function PageSeoEditor() {
   const [pageName, setPageName] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { toast, showToast, dismissToast } = useToast();
 
   useEffect(() => {
     if (!pageId) return;
@@ -48,7 +50,7 @@ export default function PageSeoEditor() {
 
   async function handleSave() {
     if (!metaTitle.trim() || !metaDescription.trim()) {
-      alert("Please fill in both the Meta Title and Meta Description.");
+      showToast("error", "Please fill in both the Meta Title and Meta Description.");
       return;
     }
 
@@ -68,10 +70,11 @@ export default function PageSeoEditor() {
     }
     setSaving(false);
     if (success) {
-      alert("SEO Settings Saved!");
-      router.push("/admin/seo");
+      showToast("success", "SEO settings saved.");
+      // Give the toast a beat to register before leaving the page.
+      setTimeout(() => router.push("/admin/seo"), 900);
     } else {
-      alert("Failed to save SEO Settings.");
+      showToast("error", "Could not save the SEO settings. Please try again.");
     }
   }
 
@@ -86,6 +89,8 @@ export default function PageSeoEditor() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 text-white">
+      <ToastHost toast={toast} onDismiss={dismissToast} />
+
       <Link
         href="/admin/seo"
         className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-400 transition hover:text-white"

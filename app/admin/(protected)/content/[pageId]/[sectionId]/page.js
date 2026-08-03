@@ -8,6 +8,7 @@ import { getSection, saveSection } from "@/lib/cms";
 import { CMS_DATA } from "@/data";
 import DynamicField from "../../../../component/cms/dynamic/DynamicField";
 import { humanize } from "../../../../component/cms/dynamic/utils";
+import { useToast, ToastHost } from "@/components/admin/Toast";
 
 /**
  * Merge code defaults into the saved Firestore data so newly-added fields
@@ -53,6 +54,7 @@ export default function SectionEditor() {
   const [form, setForm] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { toast, showToast, dismissToast } = useToast();
 
   useEffect(() => {
     if (!pageId || !sectionId) return;
@@ -77,9 +79,15 @@ export default function SectionEditor() {
 
   async function handleSave() {
     setSaving(true);
-    await saveSection(pageId, sectionId, form);
-    setSaving(false);
-    alert("Saved!");
+    try {
+      await saveSection(pageId, sectionId, form);
+      showToast("success", "Changes saved.");
+    } catch (err) {
+      console.error("Failed to save section", err);
+      showToast("error", "Could not save your changes. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (loading) {
@@ -97,6 +105,8 @@ export default function SectionEditor() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 text-white">
+      <ToastHost toast={toast} onDismiss={dismissToast} />
+
       <Link
         href="/admin/content"
         className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-400 transition hover:text-white"

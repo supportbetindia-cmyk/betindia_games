@@ -18,12 +18,14 @@ import {
 } from "lucide-react";
 import { listAdminPosts, deletePost, setPostFlag, type AdminPost } from "@/lib/blog-admin";
 import { revalidateBlog } from "./actions";
+import { useToast, ToastHost } from "@/components/admin/Toast";
 
 export default function BlogPostsListing() {
   const [posts, setPosts] = useState<AdminPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [deletingSlug, setDeletingSlug] = useState<string | null>(null);
+  const { toast, showToast, dismissToast } = useToast();
 
   useEffect(() => {
     async function fetchPosts() {
@@ -47,9 +49,10 @@ export default function BlogPostsListing() {
         prev.map((p) => (p.slug === slug ? { ...p, published: newValue } : p))
       );
       await revalidateBlog(slug);
+      showToast("success", newValue ? "Post is now live." : "Post moved to drafts.");
     } catch (err) {
       console.error("Failed to toggle published", err);
-      alert("Failed to update status.");
+      showToast("error", "Could not update the post status. Please try again.");
     }
   }
 
@@ -76,9 +79,13 @@ export default function BlogPostsListing() {
         );
       }
       await revalidateBlog(slug);
+      showToast(
+        "success",
+        newValue ? "Post set as the featured article." : "Post is no longer featured."
+      );
     } catch (err) {
       console.error("Failed to toggle featured", err);
-      alert("Failed to update status.");
+      showToast("error", "Could not update the featured article. Please try again.");
     }
   }
 
@@ -91,9 +98,10 @@ export default function BlogPostsListing() {
       await deletePost(slug);
       setPosts((prev) => prev.filter((p) => p.slug !== slug));
       await revalidateBlog(slug);
+      showToast("success", "Post deleted.");
     } catch (err) {
       console.error("Failed to delete post", err);
-      alert("Failed to delete post.");
+      showToast("error", "Could not delete the post. Please try again.");
     } finally {
       setDeletingSlug(null);
     }
@@ -108,6 +116,8 @@ export default function BlogPostsListing() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
+      <ToastHost toast={toast} onDismiss={dismissToast} />
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-extrabold text-white flex items-center gap-2">

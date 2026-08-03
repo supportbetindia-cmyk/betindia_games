@@ -1,4 +1,5 @@
 import Link from "next/link";
+import MobileHeroBanner from "@/components/sections/MobileHeroBanner";
 import { CTA_LINKS } from "@/lib/cta-links";
 import type { PageHeroContent } from "@/lib/page-content";
 
@@ -30,45 +31,17 @@ export default function SportsHero({
   return (
     <section className="bg-[#050B18]   md:px-0 md:pt-0">
       {/* Mobile hero poster with HTML text overlaid on the image. */}
-      <div className="relative overflow-hidden md:hidden">
-        <img src={mobileHeroImage} alt="" className="block aspect-[16/9] w-full object-cover" />
-
-        {/* Readability gradient behind the text (top area). */}
-        <div
-          aria-hidden
-          className="absolute inset-x-0 top-0 z-[1] h-1/2 bg-gradient-to-b from-[#050B18]/85 via-[#050B18]/40 to-transparent"
-        />
-
-        {/* Text layer */}
-        <div className="absolute inset-x-0 top-0 z-10 flex flex-col items-center px-5 pt-6 text-center">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF6B00]!">
-            {content.eyebrow}
-          </p>
-          <h1 className="mt-1 text-2xl! font-extrabold leading-tight! tracking-tight text-white">
-            {content.title}{" "}
-            <span className="text-[#FF6B00]!">{content.highlightedTitle}</span>
-          </h1>
-          <p className="mt-2 max-w-[80%] text-xs leading-snug text-slate-200">
-            {content.description}
-          </p>
-          {/* Both CTAs side by side, mirroring the desktop hero. */}
-          <div className="mt-3 flex flex-row flex-wrap items-center justify-center gap-2">
-            <Link
-              href={CTA_LINKS.signup}
-              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#FF6B00] px-4 py-2 text-xs font-bold text-white shadow-lg shadow-[#FF6B00]/25 transition-all duration-300 hover:bg-[#FF8A00]"
-            >
-              Start Betting
-              <span aria-hidden>&rarr;</span>
-            </Link>
-            <a
-              href="#live-matches"
-              className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white backdrop-blur-md transition-all duration-300 hover:border-[#FF6B00] hover:bg-white/10"
-            >
-              View Live Matches
-            </a>
-          </div>
-        </div>
-      </div>
+      <MobileHeroBanner
+        image={mobileHeroImage}
+        eyebrow={content.eyebrow}
+        title={content.title}
+        highlightedTitle={content.highlightedTitle}
+        description={content.description}
+        primaryHref={CTA_LINKS.signup}
+        primaryLabel="Start Betting"
+        secondaryHref="#live-matches"
+        secondaryLabel="View Live Matches"
+      />
 
       {/* Desktop hero */}
       <div className="relative hidden min-h-[500px] overflow-hidden md:block">

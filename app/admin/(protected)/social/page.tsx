@@ -5,11 +5,13 @@ import { Loader2, Save, Plus, Trash2 } from "lucide-react";
 import { getSection, saveSection } from "@/lib/cms";
 import { DEFAULT_SOCIALS, SOCIAL_ICON_OPTIONS, type SocialLink } from "@/lib/social-links";
 import { revalidateSocial } from "./actions";
+import { useToast, ToastHost } from "@/components/admin/Toast";
 
 export default function SocialLinksPage() {
   const [items, setItems] = useState<SocialLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { toast, showToast, dismissToast } = useToast();
 
   useEffect(() => {
     async function load() {
@@ -47,7 +49,12 @@ export default function SocialLinksPage() {
       }
     }
     setSaving(false);
-    alert(success ? "Social links saved!" : "Failed to save social links.");
+    showToast(
+      success ? "success" : "error",
+      success
+        ? "Social links saved."
+        : "Could not save the social links. Please try again."
+    );
   }
 
   if (loading) {
@@ -61,6 +68,8 @@ export default function SocialLinksPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 text-white">
+      <ToastHost toast={toast} onDismiss={dismissToast} />
+
       <div>
         <h1 className="text-3xl font-extrabold">Social Links</h1>
         <p className="mt-2 text-sm text-slate-500">

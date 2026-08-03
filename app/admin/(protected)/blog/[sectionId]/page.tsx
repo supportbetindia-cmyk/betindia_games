@@ -8,6 +8,7 @@ import { getSection, saveSection } from "@/lib/cms";
 import { blogContent } from "@/data/blog";
 import DynamicField from "../../../component/cms/dynamic/DynamicField";
 import { humanize } from "../../../component/cms/dynamic/utils";
+import { useToast, ToastHost } from "@/components/admin/Toast";
 
 const PAGE_ID = "blog";
 
@@ -25,6 +26,7 @@ export default function BlogSectionEditor() {
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { toast, showToast, dismissToast } = useToast();
 
   useEffect(() => {
     if (!sectionId) return;
@@ -47,9 +49,15 @@ export default function BlogSectionEditor() {
 
   async function handleSave() {
     setSaving(true);
-    await saveSection(PAGE_ID, sectionId, form);
-    setSaving(false);
-    alert("Saved!");
+    try {
+      await saveSection(PAGE_ID, sectionId, form);
+      showToast("success", "Changes saved.");
+    } catch (err) {
+      console.error("Failed to save section", err);
+      showToast("error", "Could not save your changes. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (loading) {
@@ -65,6 +73,8 @@ export default function BlogSectionEditor() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 text-white">
+      <ToastHost toast={toast} onDismiss={dismissToast} />
+
       <Link
         href="/admin/blog"
         className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-400 transition hover:text-white"
