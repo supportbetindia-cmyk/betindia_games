@@ -97,17 +97,7 @@ export default async function AndarBaharPage() {
               />
             </div>
           )}
-          <div aria-hidden className="pointer-events-none absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-[#FF6B00]/12 blur-3xl" />
-          <div aria-hidden className="pointer-events-none absolute -bottom-40 -right-20 h-[460px] w-[460px] rounded-full bg-[#138808]/12 blur-3xl" />
-          {/* Casino-felt grid texture */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0"
-            style={{
-              backgroundImage: `linear-gradient(${ANDAR} 1px, transparent 1px), linear-gradient(90deg, ${ANDAR} 1px, transparent 1px)`,
-              backgroundSize: "44px 44px",
-            }}
-          />
+       
 
           <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-10 px-4 py-[58px] sm:px-6 lg:grid-cols-2 lg:gap-14 lg:px-8 lg:py-[86px]">
             {/* Left — copy */}

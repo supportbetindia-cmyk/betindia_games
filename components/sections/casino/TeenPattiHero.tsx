@@ -49,17 +49,7 @@ export default function TeenPattiHero({
         </div>
       )}
 
-      <div aria-hidden className="pointer-events-none absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-[#FF6B00]/12 blur-3xl" />
-      <div aria-hidden className="pointer-events-none absolute -bottom-40 -right-20 h-[460px] w-[460px] rounded-full bg-[#138808]/12 blur-3xl" />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage: `linear-gradient(${ORANGE} 1px, transparent 1px), linear-gradient(90deg, ${ORANGE} 1px, transparent 1px)`,
-          backgroundSize: "44px 44px",
-        }}
-      />
-
+     
       <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-10 px-4 py-[58px] sm:px-6 lg:grid-cols-2 lg:gap-14 lg:px-8 lg:py-[86px]">
         <div className="flex max-w-3xl flex-col items-center text-center md:items-start md:text-left">
           <h1 className="mt-4 max-w-2xl text-3xl font-extrabold leading-[1.2] tracking-tight text-white sm:text-4xl md:text-5xl lg:text-[clamp(2rem,4.5vw,3.5rem)]">
