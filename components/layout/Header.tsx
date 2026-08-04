@@ -86,12 +86,7 @@ export default function Header() {
         {/* Desktop Auth Buttons — Login/Register are the two primary CTAs, so
             Download is styled as a quieter outline button beside them. */}
         <div className="hidden items-center gap-2.5 md:flex">
-          <Link
-            href={CTA_LINKS.login}
-            className="rounded-lg bg-[#FF6B00] px-5 py-2 text-sm font-bold uppercase tracking-wide text-white transition-all duration-200 hover:bg-[#FF8A00] hover:shadow-lg hover:shadow-[#FF6B00]/25"
-          >
-            Login
-          </Link>
+        
           <Link
             href={CTA_LINKS.signup}
             className="rounded-lg bg-[#138808] px-5 py-2 text-sm font-bold uppercase tracking-wide text-white transition-all duration-200 hover:bg-[#16A30A] hover:shadow-lg hover:shadow-[#138808]/25"

@@ -34,17 +34,9 @@ export default function KabaddiHero({
           <img src={imageUrl} alt="" className="w-full h-full object-cover object-right sm:object-center" />
         </div>
       )}
-      <div aria-hidden className="pointer-events-none absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-[#FF6B00]/10 blur-3xl" />
-      <div aria-hidden className="pointer-events-none absolute -bottom-40 -right-20 h-[460px] w-[460px] rounded-full blur-3xl" style={{ background: `${ACCENT}1A` }} />
+     
       {/* Arena grid overlay — subtle scoreboard/stadium-floor texture */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage: `linear-gradient(${ACCENT} 1px, transparent 1px), linear-gradient(90deg, ${ACCENT} 1px, transparent 1px)`,
-          backgroundSize: "44px 44px",
-        }}
-      />
+      
 
       <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-[58px] sm:px-6 lg:px-8 lg:py-[86px]">
         <div className="flex flex-col items-center text-center md:items-start md:text-left max-w-3xl">
