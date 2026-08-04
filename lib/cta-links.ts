@@ -4,6 +4,8 @@
 
 export const CTA_LINKS = {
   signup:     "https://www.betindia.bet/",
+  // Same platform as signup — point this at a dedicated login URL if you get one.
+  login:      "https://www.betindia.bet/",
   sports:     "/sports",
   casino:     "/casino",
   vip:        "/vip",

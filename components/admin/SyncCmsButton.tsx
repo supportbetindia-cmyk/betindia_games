@@ -11,15 +11,14 @@ export default function SyncCmsButton() {
   const [busy, setBusy] = useState<Job | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [overwrite, setOverwrite] = useState(false);
 
-  async function run(job: Job, action: (force: boolean) => Promise<Summary>) {
+  async function run(job: Job, action: () => Promise<Summary>) {
     if (busy) return;
     setBusy(job);
     setError(null);
     setSummary(null);
     try {
-      setSummary(await action(overwrite));
+      setSummary(await action());
     } catch {
       setError("Sync failed. Check your connection and Firestore rules.");
     } finally {
@@ -33,7 +32,7 @@ export default function SyncCmsButton() {
         <div>
           <h2 className="text-sm font-bold text-white">CMS Content</h2>
           <p className="mt-0.5 text-xs text-slate-500">
-            Seed page/section documents from code defaults. Check overwrite option to restore default templates.
+            Adds any missing pages or sections. Your existing content is never changed or deleted.
           </p>
         </div>
         <div className="flex shrink-0 gap-2">
@@ -54,19 +53,6 @@ export default function SyncCmsButton() {
             {busy === "all" ? "Syncing…" : "Sync All Pages"}
           </button>
         </div>
-      </div>
-
-      <div className="mt-3 flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="overwrite-defaults"
-          checked={overwrite}
-          onChange={(e) => setOverwrite(e.target.checked)}
-          className="h-4 w-4 rounded border-white/10 bg-white/5 text-[#FF6B00] focus:ring-[#FF6B00] cursor-pointer"
-        />
-        <label htmlFor="overwrite-defaults" className="text-xs font-semibold text-slate-400 cursor-pointer select-none">
-          Overwrite existing content in database with local code defaults (Restore Templates)
-        </label>
       </div>
 
       {error && (

@@ -100,7 +100,9 @@ export default function SectionEditor() {
   }
 
   // Hide retired fields from the editor (e.g. the old hero "eyebrow").
-  const HIDDEN_KEYS = ["eyebrow"];
+  // Retired fields no component renders any more (still present in older
+  // Firestore documents, so they must be filtered out here rather than in data).
+  const HIDDEN_KEYS = ["eyebrow", "bgImageUrl"];
   const keys = Object.keys(form).filter((k) => !HIDDEN_KEYS.includes(k));
 
   return (

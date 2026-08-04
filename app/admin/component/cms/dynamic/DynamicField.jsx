@@ -24,7 +24,17 @@ export default function DynamicField({ label, value, onChange }) {
 
   // ── Leaf fields (render their own label) ───────────────────────────────────
   // Image-URL fields get a Supabase uploader (also works inside card items).
-  if ((type === "text" || type === "null") && typeof label === "string" && IMAGE_LABEL.test(label))
+  //
+  // This is checked BEFORE the text/textarea split and includes "textarea" on
+  // purpose. detectType() calls any string over 100 chars a "textarea", and a
+  // Supabase public URL is ~91 chars before the filename even starts — so all
+  // but the shortest filenames used to fall through to a plain textarea and
+  // lose the uploader entirely. An image field is an image field at any length.
+  const isImageLeaf =
+    (type === "text" || type === "null" || type === "textarea") &&
+    typeof label === "string" &&
+    IMAGE_LABEL.test(label);
+  if (isImageLeaf)
     return <ImageField label={label} value={value ?? ""} onChange={onChange} />;
   if (type === "text" || type === "null")
     return <TextField label={label} value={value ?? ""} onChange={onChange} />;

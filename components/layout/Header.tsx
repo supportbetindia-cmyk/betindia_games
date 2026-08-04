@@ -50,13 +50,11 @@ export default function Header() {
 
         {/* Logo */}
         <Link href="/" className="flex items-center" onClick={() => setMenuOpen(false)}>
-          <Image
+          <img
             src="/logo/betindialogo.png"
             alt="BetIndia"
-            width={180}
-            height={54}
-            priority
-            className="h-auto w-auto"
+            width={170}
+            height={170}
           />
         </Link>
 
@@ -85,23 +83,25 @@ export default function Header() {
           ))}
         </nav>
 
-        {/* Desktop Auth Buttons */}
-        <div className="hidden items-center gap-3 md:flex">
+        {/* Desktop Auth Buttons — Login/Register are the two primary CTAs, so
+            Download is styled as a quieter outline button beside them. */}
+        <div className="hidden items-center gap-2.5 md:flex">
+          <Link
+            href={CTA_LINKS.login}
+            className="rounded-lg bg-[#FF6B00] px-5 py-2 text-sm font-bold uppercase tracking-wide text-white transition-all duration-200 hover:bg-[#FF8A00] hover:shadow-lg hover:shadow-[#FF6B00]/25"
+          >
+            Login
+          </Link>
           <Link
             href={CTA_LINKS.signup}
-            className={[
-              "rounded-lg border px-4 py-2 text-sm font-semibold transition-all bg-green-700 duration-200",
-              isActive("/login")
-                ? "border-[#FF6B00] text-[#FF6B00]"
-                : "border-white/20 text-white hover:border-[#FF6B00] hover:text-[#FF6B00]",
-            ].join(" ")}
+            className="rounded-lg bg-[#138808] px-5 py-2 text-sm font-bold uppercase tracking-wide text-white transition-all duration-200 hover:bg-[#16A30A] hover:shadow-lg hover:shadow-[#138808]/25"
           >
             Register
           </Link>
           <a
             href="/betindia.apk"
             download
-            className="rounded-lg bg-[#FF6B00] px-5 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-[#FF8A00] hover:shadow-lg hover:shadow-[#FF6B00]/25"
+            className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:border-[#FF6B00] hover:text-[#FF6B00]"
           >
             Download
           </a>
@@ -138,23 +138,28 @@ export default function Header() {
             ))}
 
             <div className="mt-3 flex flex-col gap-2 border-t border-white/10 pt-3">
-              <Link
-                href={CTA_LINKS.signup}
-                onClick={() => setMenuOpen(false)}
-                className={[
-                  "rounded-lg border px-4 py-2.5 text-center text-sm font-semibold transition-all duration-200",
-                  isActive("/login")
-                    ? "border-[#FF6B00] text-[#FF6B00]"
-                    : "border-white/20 text-white hover:border-[#FF6B00] hover:text-[#FF6B00]",
-                ].join(" ")}
-              >
-                Register
-              </Link>
+              {/* Equal-width pair, matching the desktop colours. */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <Link
+                  href={CTA_LINKS.login}
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-lg bg-[#FF6B00] px-4 py-3 text-center text-sm font-bold uppercase tracking-wide text-white transition-all duration-200 hover:bg-[#FF8A00]"
+                >
+                  Login
+                </Link>
+                <Link
+                  href={CTA_LINKS.signup}
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-lg bg-[#138808] px-4 py-3 text-center text-sm font-bold uppercase tracking-wide text-white transition-all duration-200 hover:bg-[#16A30A]"
+                >
+                  Register
+                </Link>
+              </div>
               <a
-                href="/downloads/betindia.apk"
+                href="/betindia.apk"
                 download
                 onClick={() => setMenuOpen(false)}
-                className="rounded-lg bg-[#FF6B00] px-4 py-2.5 text-center text-sm font-semibold text-white transition-all duration-200 hover:bg-[#FF8A00]"
+                className="rounded-lg border border-white/20 px-4 py-2.5 text-center text-sm font-semibold text-white transition-all duration-200 hover:border-[#FF6B00] hover:text-[#FF6B00]"
               >
                 Download
               </a>

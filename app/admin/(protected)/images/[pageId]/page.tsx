@@ -15,6 +15,11 @@ import { useToast, ToastHost } from "@/components/admin/Toast";
 const IMAGE_KEY = /(image|img|photo|banner|thumbnail|picture|logo|cover|avatar)/i;
 const ALT_KEY = /alt/i;
 
+// Retired fields that no component renders any more. They're removed from the
+// code defaults, but existing Firestore documents still carry them, so they'd
+// otherwise keep showing up here and invite uploads that do nothing.
+const RETIRED_KEYS = new Set(["bgImageUrl"]);
+
 type Path = (string | number)[];
 type Entry = { path: Path; kind: "image" | "alt" };
 type Sections = Record<string, Record<string, unknown>>;
@@ -59,6 +64,7 @@ function collectFields(value: unknown, path: Path = [], out: Entry[] = []): Entr
     value.forEach((v, i) => collectFields(v, [...path, i], out));
   } else if (value && typeof value === "object") {
     for (const [k, v] of Object.entries(value)) {
+      if (RETIRED_KEYS.has(k)) continue;
       if (typeof v === "string") {
         if (IMAGE_KEY.test(k)) out.push({ path: [...path, k], kind: "image" });
         else if (ALT_KEY.test(k)) out.push({ path: [...path, k], kind: "alt" });
