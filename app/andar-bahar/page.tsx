@@ -76,6 +76,26 @@ export default async function AndarBaharPage() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "BetIndia",
+            alternateName: "BetIndia Games",
+            url: "https://www.betindia.games/",
+            logo: "https://www.betindia.games/logo/betindialogo.png",
+            sameAs: [
+              "https://www.facebook.com/people/BetIndia/61590950743315/",
+              "https://x.com/playbetindia",
+              "https://www.instagram.com/playbetindia/",
+              "https://www.linkedin.com/company/135704073/admin/dashboard/",
+              "https://www.betindia.games/",
+            ],
+          }),
+        }}
+      />
       <main className="bg-[#050B18]">
         {/* ─── HERO ─────────────────────────────────────────────── */}
         <MobileHeroBanner
