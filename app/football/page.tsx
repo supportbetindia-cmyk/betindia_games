@@ -5,6 +5,8 @@ import PopularMarkets from "@/components/sections/football/PopularMarkets";
 import LiveFootballBetting from "@/components/sections/football/LiveFootballBetting";
 import FootballCTA from "@/components/sections/football/FootballCTA";
 import FAQ from "@/components/sections/FAQ";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import RelatedSports from "@/components/sections/RelatedSports";
 import { pageMetadata } from "@/lib/seo";
 import { getPage } from "@/lib/cms";
 import football, { footballContent } from "@/data/football";
@@ -77,6 +79,7 @@ export default async function FootballPage() {
     <>
       <main>
         <FootballHero content={heroContent} />
+        <Breadcrumbs items={[{ label: "Sports", href: "/sports" }, { label: "Football Betting" }]} />
 
         <section className="relative overflow-hidden bg-[#050B18]">
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -118,6 +121,8 @@ export default async function FootballPage() {
           text={seoBlocks.whyChooseText}
           accent="#FF6B00"
         />
+
+        <RelatedSports currentSportPath="/football" />
 
         <FAQ content={page.faq} defaultContent={footballContent.faq} />
         <FootballCTA content={page.cta} />

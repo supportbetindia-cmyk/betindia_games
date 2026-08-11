@@ -9,6 +9,8 @@ import BadmintonPremiumFeatures from "@/components/sections/badminton/BadmintonP
 import BadmintonTips from "@/components/sections/badminton/BadmintonTips";
 import BadmintonCTA from "@/components/sections/badminton/BadmintonCTA";
 import FAQ from "@/components/sections/FAQ";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import RelatedSports from "@/components/sections/RelatedSports";
 import { pageMetadata } from "@/lib/seo";
 import { getPage } from "@/lib/cms";
 import { badmintonContent } from "@/data/badminton";
@@ -74,6 +76,7 @@ export default async function BadmintonPage() {
     <>
       <main>
         <BadmintonHero content={heroContent} />
+        <Breadcrumbs items={[{ label: "Sports", href: "/sports" }, { label: "Badminton Betting" }]} />
 
         <section className="relative overflow-hidden bg-[#050B18]">
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -109,6 +112,7 @@ export default async function BadmintonPage() {
           text={badmintonContent.responsible.text}
           gradientWord="Responsible"
         />
+        <RelatedSports currentSportPath="/badminton" />
         <FAQ content={page.faq} defaultContent={badmintonContent.faq} />
         <BadmintonCTA content={page.cta} />
       </main>

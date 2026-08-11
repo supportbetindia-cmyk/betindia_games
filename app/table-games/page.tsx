@@ -4,6 +4,8 @@ import PopularTableGames from "@/components/sections/table-games/PopularTableGam
 import GameRules from "@/components/sections/table-games/GameRules";
 import WhyPlayTableGames from "@/components/sections/table-games/WhyPlayTableGames";
 import TableGamesCTA from "@/components/sections/table-games/TableGamesCTA";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import RelatedGames from "@/components/sections/RelatedGames";
 import { pageMetadata } from "@/lib/seo";
 
 import { getPage } from "@/lib/cms";
@@ -29,9 +31,11 @@ export default async function TableGamesPage() {
     <>
       <main className="min-h-screen bg-[#050B18]">
         <TableGamesHero content={heroContent} />
+        <Breadcrumbs items={[{ label: "Casino Games", href: "/casino" }, { label: "Table Games" }]} />
         <PopularTableGames />
         <GameRules />
         <WhyPlayTableGames />
+        <RelatedGames currentGamePath="/table-games" />
         <TableGamesCTA content={page.cta} />
       </main>
     </>

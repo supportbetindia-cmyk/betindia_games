@@ -6,6 +6,8 @@ import VIPLevels from "@/components/sections/vip/VIPLevels";
 import VIPManager from "@/components/sections/vip/VIPManager";
 import VIPCTA from "@/components/sections/vip/VIPCTA";
 import FAQ from "@/components/sections/FAQ";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import InternalLinkGrid from "@/components/sections/InternalLinkGrid";
 import { pageMetadata } from "@/lib/seo";
 import { getPage } from "@/lib/cms";
 import VIPBenefitsData, { vipBenefitsContent } from "@/data/VIPBenefits";
@@ -68,6 +70,7 @@ export default async function VIPPage() {
     <>
       <main>
         <VIPHero content={heroContent} />
+        <Breadcrumbs items={[{ label: "VIP Club & Rewards" }]} />
 
         <section className="relative overflow-hidden bg-[#050B18]">  
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
@@ -116,6 +119,7 @@ export default async function VIPPage() {
           text={seoBlocks.exclusiveMembershipText}
           gradientWord="VIP Membership"
         />
+        <InternalLinkGrid />
         <FAQ content={page.faq} defaultContent={vipBenefitsContent.faq} />
         <VIPCTA content={page.cta} />
       </main>

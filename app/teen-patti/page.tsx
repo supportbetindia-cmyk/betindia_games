@@ -7,6 +7,8 @@ import TeenPattiHero from "@/components/sections/casino/TeenPattiHero";
 import TeenPattiStats from "@/components/sections/casino/TeenPattiStats";
 import FAQ from "@/components/sections/FAQ";
 import TeenPattiBottomCTA from "@/components/sections/casino/TeenPattiBottomCTA";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import RelatedGames from "@/components/sections/RelatedGames";
 import {
   Zap,
   HelpCircle,
@@ -84,6 +86,7 @@ export default async function TeenPattiPage() {
     <>
       <main className="bg-[#050B18]">
         <TeenPattiHero content={heroContent} />
+        <Breadcrumbs items={[{ label: "Casino Games", href: "/casino" }, { label: "Teen Patti Online" }]} />
 
         {/* Intro + overview info table */}
         <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -408,6 +411,9 @@ export default async function TeenPattiPage() {
             <p className="mt-6 text-sm leading-relaxed text-slate-400 sm:text-base">{c.responsible.closing}</p>
           </div>
         </section>
+
+        {/* Explore Other Casino Games */}
+        <RelatedGames currentGamePath="/teen-patti" />
 
         {/* 17. FAQs */}
         <div id={slug("Frequently Asked Questions")}>

@@ -8,6 +8,8 @@ import BetIndiaMultiplierPanel from "@/components/sections/casino/BetIndiaMultip
 import BetIndiaLiveStats from "@/components/sections/casino/BetIndiaLiveStats";
 import FAQ from "@/components/sections/FAQ";
 import BetIndiaBottomCTA from "@/components/sections/casino/BetIndiaBottomCTA";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import RelatedGames from "@/components/sections/RelatedGames";
 import {
   Zap,
   GraduationCap,
@@ -84,6 +86,7 @@ export default async function AviatorPage() {
       <main className="bg-[#050B18]">
         {/* 1. Cinematic Hero Section */}
         <BetIndiaHero content={heroContent} />
+        <Breadcrumbs items={[{ label: "Casino Games", href: "/casino" }, { label: "Aviator Crash Game" }]} />
 
         {/* 2. Cockpit Live Multiplier HUD Panel */}
         <div className="py-6">
@@ -415,6 +418,9 @@ export default async function AviatorPage() {
             <p className="mt-6 text-sm leading-relaxed text-slate-400 sm:text-base">{c.responsible.closing}</p>
           </div>
         </section>
+
+        {/* Explore Other Casino Games */}
+        <RelatedGames currentGamePath="/aviator" />
 
         {/* 16. FAQs (dynamic/default fallback FAQ component) */}
         <div id={slug("Frequently Asked Questions")}>

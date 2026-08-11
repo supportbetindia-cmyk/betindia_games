@@ -9,6 +9,8 @@ import WhyChooseLiveBetting from "@/components/sections/live/WhyChooseLiveBettin
 import LiveMarketsAvailable from "@/components/sections/live/LiveMarketsAvailable";
 import LiveCTA from "@/components/sections/live/LiveCTA";
 import FAQ from "@/components/sections/FAQ";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import RelatedSports from "@/components/sections/RelatedSports";
 import { pageMetadata } from "@/lib/seo";
 import { getPage } from "@/lib/cms";
 import { liveContent } from "@/data/live";
@@ -52,6 +54,7 @@ const TRUST = [
     <>
       <main>
         <LiveHero content={page.hero} />
+        <Breadcrumbs items={[{ label: "Sports", href: "/sports" }, { label: "Live In-Play Betting" }]} />
         <section className="relative overflow-hidden bg-[#050B18]">
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
             <ul className="mt-9 grid w-full grid-cols-2 gap-3 sm:grid-cols-4">
@@ -110,6 +113,8 @@ const TRUST = [
             ))}
           </div>
         </section>
+
+        <RelatedSports currentSportPath="/live" />
 
         <FAQ content={liveContent.faq} defaultContent={liveContent.faq} />
         <LiveCTA />

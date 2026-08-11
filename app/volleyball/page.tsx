@@ -10,6 +10,8 @@ import VolleyballPremiumFeatures from "@/components/sections/volleyball/Volleyba
 import VolleyballTips from "@/components/sections/volleyball/VolleyballTips";
 import VolleyballCTA from "@/components/sections/volleyball/VolleyballCTA";
 import FAQ from "@/components/sections/FAQ";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import RelatedSports from "@/components/sections/RelatedSports";
 import { pageMetadata } from "@/lib/seo";
 import { getPage } from "@/lib/cms";
 import { volleyballContent } from "@/data/volleyball";
@@ -75,6 +77,7 @@ export default async function VolleyballPage() {
     <>
       <main>
         <VolleyballHero content={heroContent} />
+        <Breadcrumbs items={[{ label: "Sports", href: "/sports" }, { label: "Volleyball Betting" }]} />
 
         <section className="relative overflow-hidden bg-[#050B18]">
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -116,6 +119,7 @@ export default async function VolleyballPage() {
           text={volleyballContent.responsible.text}
           gradientWord="Responsible"
         />
+        <RelatedSports currentSportPath="/volleyball" />
         <FAQ content={page.faq} defaultContent={volleyballContent.faq} />
         <VolleyballCTA content={page.cta} />
       </main>

@@ -17,6 +17,8 @@ import {
 } from "@/components/sections/esports/EsportsContentBlocks";
 import EsportsCTA from "@/components/sections/esports/EsportsCTA";
 import FAQ from "@/components/sections/FAQ";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import RelatedSports from "@/components/sections/RelatedSports";
 import { pageMetadata } from "@/lib/seo";
 import { getPage } from "@/lib/cms";
 import { esportsContent } from "@/data/esports";
@@ -36,8 +38,6 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export const revalidate = 300;
 
-
-
 export default async function EsportsPage() {
   const page = await getPage("esports");
   const heroContent = page.hero || esportsContent.hero;
@@ -49,12 +49,11 @@ export default async function EsportsPage() {
     { icon: ShieldCheck, text: "Secure Sportsbook" },
   ] as const;
 
-
-
   return (
     <>
       <main>
         <EsportsHero content={heroContent} />
+        <Breadcrumbs items={[{ label: "Sports", href: "/sports" }, { label: "Esports Betting" }]} />
 
         <section className="relative overflow-hidden bg-[#050B18]">
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -87,6 +86,7 @@ export default async function EsportsPage() {
         <EsportsTips />
         <EsportsMistakes />
         <EsportsResponsible />
+        <RelatedSports currentSportPath="/esports" />
         <FAQ content={page.faq} defaultContent={esportsContent.faq} />
         <EsportsCTA content={page.cta} />
       </main>

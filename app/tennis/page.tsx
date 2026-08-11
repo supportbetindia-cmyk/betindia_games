@@ -5,6 +5,8 @@ import TennisTournaments from "@/components/sections/tennis/TennisTournaments";
 import TennisTips from "@/components/sections/tennis/TennisTips";
 import TennisCTA from "@/components/sections/tennis/TennisCTA";
 import FAQ from "@/components/sections/FAQ";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import RelatedSports from "@/components/sections/RelatedSports";
 import { pageMetadata } from "@/lib/seo";
 import { getPage } from "@/lib/cms";
 import tennis, { tennisContent } from "@/data/tennis";
@@ -61,16 +63,18 @@ export default async function TennisPage() {
   const seoBlocks = { ...tennisContent.seoBlocks, ...(page.seoBlocks ?? {}) };
 
   const TRUST = [
-  { icon: Activity, text: "Live Tennis Odds" },
-  { icon: Zap, text: "In-Play Betting" },
-  { icon: BarChart3, text: "Point-by-Point Stats" },
-  { icon: ShieldCheck, text: "Fast Withdrawals" },
-] as const;
+    { icon: Activity, text: "Live Tennis Odds" },
+    { icon: Zap, text: "In-Play Betting" },
+    { icon: BarChart3, text: "Point-by-Point Stats" },
+    { icon: ShieldCheck, text: "Fast Withdrawals" },
+  ] as const;
 
   return (
     <>
       <main>
         <TennisHero content={heroContent} />
+        <Breadcrumbs items={[{ label: "Sports", href: "/sports" }, { label: "Tennis Betting" }]} />
+
         <section className="relative overflow-hidden bg-[#050B18]">
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-8">
             <ul className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4">
@@ -140,6 +144,7 @@ export default async function TennisPage() {
           gradientWord="Odds"
         />
         <TennisTips />
+        <RelatedSports currentSportPath="/tennis" />
         <FAQ content={page.faq} defaultContent={tennisContent.faq} />
         <TennisCTA content={page.cta} />
       </main>

@@ -5,6 +5,8 @@ import LiveCricketMatches from "@/components/sections/LiveCricketMatches";
 import WhyBetOnCricket from "@/components/sections/cricket/WhyBetOnCricket";
 import CricketCTA from "@/components/sections/cricket/CricketCTA";
 import FAQ from "@/components/sections/FAQ";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import RelatedSports from "@/components/sections/RelatedSports";
 import { pageMetadata } from "@/lib/seo";
 import { getPage } from "@/lib/cms";
 import cricket, { cricketContent } from "@/data/cricket";
@@ -41,6 +43,7 @@ export default async function CricketPage() {
       <main>
         {/* 1. Hero */}
         <CricketHero content={heroContent} />
+        <Breadcrumbs items={[{ label: "Sports", href: "/sports" }, { label: "Cricket Betting" }]} />
 
         <section className="relative overflow-hidden bg-[#050B18]">
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -120,6 +123,9 @@ export default async function CricketPage() {
 
         {/* 8. Cricket CTA */}
         <CricketCTA />
+
+        {/* Explore Other Sports */}
+        <RelatedSports currentSportPath="/cricket" />
 
         {/* 9. Dynamic FAQ Block */}
         <FAQ content={page.faq} defaultContent={cricketContent.faq} />

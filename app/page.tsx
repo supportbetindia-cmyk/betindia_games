@@ -17,6 +17,7 @@ import HowItWorks from "@/components/sections/HowItWorks";
 import LiveCricketMatches from "@/components/sections/LiveCricketMatches";
 import LatestArticles from "@/components/sections/LatestArticles";
 import FAQ from "@/components/sections/FAQ";
+import InternalLinkGrid from "@/components/sections/InternalLinkGrid";
 import { pageMetadata } from "@/lib/seo";
 import { getPage } from "@/lib/cms";
 import { homeContent } from "@/data/home";
@@ -315,6 +316,9 @@ export default async function Home() {
 
         {/* Latest Articles section */}
         <LatestArticles content={page.latestArticles} />
+
+        {/* Deep Internal Link Grid */}
+        <InternalLinkGrid />
 
         {/* 10. Frequently Asked Questions */}
         <FAQ content={page.faq} defaultContent={homeContent.faq} />

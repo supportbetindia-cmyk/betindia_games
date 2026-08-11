@@ -4,6 +4,8 @@ import PopularSlots from "@/components/sections/slots/PopularSlots";
 import JackpotSlots from "@/components/sections/slots/JackpotSlots";
 import SlotsCTA from "@/components/sections/slots/SlotsCTA";
 import FAQ from "@/components/sections/FAQ";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import RelatedGames from "@/components/sections/RelatedGames";
 import { pageMetadata } from "@/lib/seo";
 import { getPage } from "@/lib/cms";
 import slots, { slotsContent } from "@/data/slots";
@@ -61,10 +63,12 @@ export default async function SlotsPage() {
     <>
       <main>
         <SlotsHero content={heroContent} />
+        <Breadcrumbs items={[{ label: "Casino Games", href: "/casino" }, { label: "Online Slots" }]} />
         <CenteredSeoSection title={intro.title} text={intro.text} />
         <PopularSlots />
         <JackpotSlots />
         <CenteredSeoSection title={whyChoose.title} text={whyChoose.text} />
+        <RelatedGames currentGamePath="/slots" />
         <FAQ content={page.faq} defaultContent={slotsContent.faq} />
         <SlotsCTA content={page.cta} />
       </main>

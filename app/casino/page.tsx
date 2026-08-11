@@ -8,6 +8,9 @@ import AviatorSection from "@/components/sections/casino/AviatorSection";
 import FeaturedGames from "@/components/sections/casino/FeaturedGames";
 import CasinoCTA from "@/components/sections/casino/CasinoCTA";
 import FAQ from "@/components/sections/FAQ";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import RelatedGames from "@/components/sections/RelatedGames";
+import InternalLinkGrid from "@/components/sections/InternalLinkGrid";
 import { pageMetadata } from "@/lib/seo";
 import { getPage } from "@/lib/cms";
 import casino, { casinoContent } from "@/data/casino";
@@ -49,6 +52,7 @@ export default async function CasinoPage() {
       <main>
         {/* 1. Hero */}
         <CasinoHero content={heroContent} />
+        <Breadcrumbs items={[{ label: "Casino Games" }]} />
 
 
         <section className="relative overflow-hidden bg-[#050B18]">  
@@ -146,6 +150,12 @@ export default async function CasinoPage() {
 
         {/* 10. Final CTA */}
         <CasinoCTA content={page.finalCta} />
+
+        {/* 10. Related Games */}
+        <RelatedGames currentGamePath="/casino" />
+
+        {/* Deep Internal Link Grid */}
+        <InternalLinkGrid />
 
         {/* 11. FAQ */}
         <FAQ content={page.faq} defaultContent={casinoContent.faq} />

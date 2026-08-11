@@ -5,6 +5,9 @@ import PopularSports from "@/components/sections/sports/PopularSports";
 import BettingMarkets from "@/components/sections/sports/BettingMarkets";
 import SportsCTA from "@/components/sections/sports/SportsCTA";
 import FAQ from "@/components/sections/FAQ";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import RelatedSports from "@/components/sections/RelatedSports";
+import InternalLinkGrid from "@/components/sections/InternalLinkGrid";
 import { pageMetadata } from "@/lib/seo";
 import { getPage } from "@/lib/cms";
 import sports, { sportsContent } from "@/data/sports";
@@ -56,7 +59,7 @@ export default async function SportsPage() {
       <main>
         {/* 1. Hero */}
         <SportsHero content={heroContent} />
-
+        <Breadcrumbs items={[{ label: "Sports Betting" }]} />
 
         <section className="relative overflow-hidden bg-[#050B18]">
           <div className="mx-auto max-w-7xl space-y-9 px-4 py-6 sm:px-6 lg:px-8">
@@ -188,6 +191,12 @@ export default async function SportsPage() {
 
           </div>
         </section>
+
+        {/* Related Sports Cross-Linking */}
+        <RelatedSports currentSportPath="/sports" />
+
+        {/* Deep Internal Link Grid */}
+        <InternalLinkGrid />
 
         {/* 11. FAQ Accordions */}
         <FAQ content={page.faq} defaultContent={sportsContent.faq} />

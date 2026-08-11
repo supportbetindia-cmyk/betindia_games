@@ -17,6 +17,8 @@ import KabaddiTips from "@/components/sections/kabaddi/KabaddiTips";
 import KabaddiWhyChoose from "@/components/sections/kabaddi/KabaddiWhyChoose";
 import KabaddiCTA from "@/components/sections/kabaddi/KabaddiCTA";
 import FAQ from "@/components/sections/FAQ";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import RelatedSports from "@/components/sections/RelatedSports";
 import { pageMetadata } from "@/lib/seo";
 import { getPage } from "@/lib/cms";
 import { kabaddiContent } from "@/data/kabaddi";
@@ -58,6 +60,7 @@ export default async function KabaddiPage() {
     <>
       <main>
         <KabaddiHero content={heroContent} />
+        <Breadcrumbs items={[{ label: "Sports", href: "/sports" }, { label: "Kabaddi Betting" }]} />
 
         <section className="relative overflow-hidden bg-[#050B18]">
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -104,6 +107,7 @@ export default async function KabaddiPage() {
         <KabaddiMistakes />
         <KabaddiWhyChoose />
         <KabaddiResponsible />
+        <RelatedSports currentSportPath="/kabaddi" />
         <FAQ content={page.faq} defaultContent={kabaddiContent.faq} />
         <KabaddiCTA content={page.cta} />
       </main>

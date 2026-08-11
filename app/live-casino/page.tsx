@@ -7,6 +7,8 @@ import WhyLiveCasino from "@/components/sections/live-casino/WhyLiveCasino";
 import FeaturedTables from "@/components/sections/live-casino/FeaturedTables";
 import LiveCasinoCTA from "@/components/sections/live-casino/LiveCasinoCTA";
 import FAQ from "@/components/sections/FAQ";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import RelatedGames from "@/components/sections/RelatedGames";
 import { pageMetadata } from "@/lib/seo";
 import { getPage } from "@/lib/cms";
 import { Users, Video, Zap, ShieldCheck } from "lucide-react";
@@ -62,6 +64,7 @@ export default async function LiveCasinoPage() {
     <>
       <main>
         <LiveCasinoHero content={page.hero} />
+        <Breadcrumbs items={[{ label: "Casino Games", href: "/casino" }, { label: "Live Dealer Casino" }]} />
 
         {/* 1. Trust & Intro (Welcome description) */}
         <section className="relative overflow-hidden bg-[#050B18]">
@@ -173,6 +176,9 @@ export default async function LiveCasinoPage() {
             </div>
           </div>
         </section>
+
+        {/* Explore Other Casino Games */}
+        <RelatedGames currentGamePath="/live-casino" />
 
         {/* 6. Frequently Asked Questions */}
         <FAQ content={pageFaqs} defaultContent={pageFaqs} />

@@ -5,6 +5,8 @@ import FeaturedPromotions from "@/components/sections/promotions/FeaturedPromoti
 import WhyJoinBetIndia from "@/components/sections/promotions/WhyJoinBetIndia";
 import PromotionsCTA from "@/components/sections/promotions/PromotionsCTA";
 import FAQ from "@/components/sections/FAQ";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import InternalLinkGrid from "@/components/sections/InternalLinkGrid";
 import { pageMetadata } from "@/lib/seo";
 import { getPage } from "@/lib/cms";
 import Promotions, { promotionsContent } from "@/data/promotions";
@@ -39,6 +41,7 @@ export default async function PromotionsPage() {
       <main>
         {/* 1. Hero */}
         <PromotionsHero content={heroContent} />
+        <Breadcrumbs items={[{ label: "Promotions & Offers" }]} />
 
         <section className="relative overflow-hidden bg-[#050B18]">
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
@@ -204,6 +207,9 @@ export default async function PromotionsPage() {
             </p>
           </div>
         </section>
+
+        {/* Deep Internal Link Grid */}
+        <InternalLinkGrid />
 
         {/* 7. FAQs */}
         <FAQ content={page.faq} defaultContent={promotionsContent.faq} />

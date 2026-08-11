@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import FAQ from "@/components/sections/FAQ";
 import MobileHeroBanner from "@/components/sections/MobileHeroBanner";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import RelatedGames from "@/components/sections/RelatedGames";
 import { LiveBadge, HudCorners } from "@/components/sections/kabaddi/KabaddiHud";
 import { pageMetadata } from "@/lib/seo";
 import { getPage } from "@/lib/cms";
@@ -107,6 +109,7 @@ export default async function AndarBaharPage() {
           secondaryHref="#how-to-play-on-bet-india"
           secondaryLabel={hero.secondaryCta}
         />
+        <Breadcrumbs items={[{ label: "Casino Games", href: "/casino" }, { label: "Andar Bahar Online" }]} />
         <section className="relative hidden overflow-hidden bg-[#050B18] min-h-[420px] md:block md:min-h-[520px]">
           {hero.imageUrl && (
             <div className="absolute inset-0 z-0 pointer-events-none select-none">
@@ -499,6 +502,9 @@ With straightforward gameplay, quick rounds, and live dealer interaction, online
             <p className="mt-6 text-sm leading-relaxed text-slate-400 sm:text-base">{c.responsible.closing}</p>
           </div>
         </section>
+
+        {/* Explore Other Casino Games */}
+        <RelatedGames currentGamePath="/andar-bahar" />
 
         {/* ─── FAQ ──────────────────────────────────────────────── */}
         <div id={slug("Frequently Asked Questions")}>
