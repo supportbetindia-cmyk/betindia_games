@@ -40,6 +40,8 @@ export default function SlotsHero({ content }: { content?: Partial<typeof slotsC
         secondaryHref="#jackpot-slots"
         secondaryLabel={data.secondaryCta ?? "Explore Jackpots"}
       />
+
+      {/* Desktop Hero Section */}
       <section className="relative hidden items-center overflow-hidden bg-[#050B18] min-h-[480px] sm:min-h-[400px] md:flex md:min-h-[500px]">
       {(data as { imageUrl?: string }).imageUrl && (
         <div className="absolute inset-0 z-0 pointer-events-none select-none">
@@ -83,22 +85,27 @@ export default function SlotsHero({ content }: { content?: Partial<typeof slotsC
               {data.secondaryCta ?? "Explore Jackpots"}
             </a>
           </div>
+        </div>
+      </div>
+      </section>
 
-          <ul className="mt-9 grid w-full grid-cols-2 gap-3">
+      {/* ─── FEATURE BUTTONS BAR BELOW HERO SECTION ──────────────────────── */}
+      <section className="relative bg-[#050B18] px-4 py-8 border-t border-b border-white/[0.06] sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl">
+          <ul className="grid w-full grid-cols-2 gap-3 md:grid-cols-4">
             {TRUST.map(({ icon: Icon, text }) => (
               <li
                 key={text}
-                className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.04] px-4 py-3 backdrop-blur-md"
+                className="flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.04] p-3.5 sm:px-5 sm:py-4 backdrop-blur-md transition-all duration-300 hover:border-[#FF6B00]/40 hover:bg-white/[0.08]"
               >
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[#FF6B00]/30 bg-[#FF6B00]/10 text-[#FF6B00]">
-                  <Icon size={14} strokeWidth={2} />
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#FF6B00]/30 bg-[#FF6B00]/10 text-[#FF6B00]">
+                  <Icon size={18} strokeWidth={2} />
                 </span>
-                <span className="text-xs font-semibold leading-snug text-slate-300">{text}</span>
+                <span className="text-xs font-semibold leading-snug text-slate-200 sm:text-sm">{text}</span>
               </li>
             ))}
           </ul>
         </div>
-      </div>
       </section>
     </>
   );

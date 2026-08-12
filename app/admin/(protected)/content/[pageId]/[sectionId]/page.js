@@ -9,6 +9,7 @@ import { CMS_DATA } from "@/data";
 import DynamicField from "../../../../component/cms/dynamic/DynamicField";
 import { humanize } from "../../../../component/cms/dynamic/utils";
 import { useToast, ToastHost } from "@/components/admin/Toast";
+import { revalidateContent } from "../../actions";
 
 /**
  * Merge code defaults into the saved Firestore data so newly-added fields
@@ -81,6 +82,13 @@ export default function SectionEditor() {
     setSaving(true);
     try {
       await saveSection(pageId, sectionId, form);
+      // Purge the cached page so the edit shows on the live site immediately
+      // instead of waiting out the ISR window.
+      try {
+        await revalidateContent(pageId);
+      } catch {
+        // Non-fatal: the page still refreshes on its next revalidate.
+      }
       showToast("success", "Changes saved.");
     } catch (err) {
       console.error("Failed to save section", err);

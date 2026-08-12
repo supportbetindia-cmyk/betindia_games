@@ -29,7 +29,7 @@ export default function BlogHero({ content = DEFAULT_CONTENT }: { content?: Page
         highlightedTitle={content.highlightedTitle}
         description={content.description}
       />
-      <section className="relative hidden overflow-hidden bg-[#050B18] min-h-[400px] md:block md:min-h-[500px] text-center">
+      <section className="relative hidden items-center overflow-hidden bg-[#050B18] min-h-[480px] sm:min-h-[400px] md:flex md:min-h-[500px] text-center">
 
       <div
         aria-hidden
@@ -50,7 +50,7 @@ export default function BlogHero({ content = DEFAULT_CONTENT }: { content?: Page
         }}
       />
 
-      <div className="relative z-10 mx-auto  px-4 sm:px-6 lg:px-8 py-[58px] lg:py-[86px]">
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-[58px] sm:px-6 lg:px-8 lg:py-[86px]">
         <div className="flex flex-col items-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-300 backdrop-blur-md">
           <span className="h-1.5 w-1.5 rounded-full bg-[#FF6B00]" />

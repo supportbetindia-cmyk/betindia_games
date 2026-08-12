@@ -25,11 +25,11 @@ export default function Hero({content,}: {
       <section className="relative hidden items-center overflow-hidden bg-[#050B18] min-h-[480px] sm:min-h-[400px] md:flex md:min-h-[500px]">
       {/* Background Image from URL */}
       {data.imageUrl && (
-        <div className="absolute  pointer-events-none select-none">
+        <div className="absolute inset-0 z-0 pointer-events-none select-none">
           <img
             src={data.imageUrl}
             alt=""
-            className="w-full h-full object-cover object-right  sm:object-center"
+            className="w-full h-full object-cover object-right sm:object-center"
           />
         </div>
       )}

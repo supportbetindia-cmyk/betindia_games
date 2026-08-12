@@ -38,7 +38,7 @@ export default function MobileHeroBanner({
 }) {
   return (
     <div className="bg-[#050B18] md:hidden">
-      <div className="relative flex min-h-[580px] w-full items-start justify-center overflow-hidden pt-6 sm:min-h-[650px] sm:pt-10">
+      <div className="relative flex min-h-[580px] w-full flex-col items-center justify-start overflow-hidden pt-6 pb-8 sm:min-h-[650px] sm:pt-10">
         {/* Full height background image with object-cover */}
         {image ? (
           <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover object-top sm:object-center" />
@@ -53,7 +53,7 @@ export default function MobileHeroBanner({
         />
 
         {/* Centered text overlay positioned near the top. */}
-        <div className="relative z-10 flex w-full max-w-md flex-col items-center px-5 pt-2 pb-6 text-center">
+        <div className="relative z-10 flex w-full max-w-md flex-col items-center px-5 pt-2 text-center">
           {eyebrow ? (
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF6B00]!">
               {eyebrow}

@@ -66,8 +66,12 @@ function collectFields(value: unknown, path: Path = [], out: Entry[] = []): Entr
     for (const [k, v] of Object.entries(value)) {
       if (RETIRED_KEYS.has(k)) continue;
       if (typeof v === "string") {
-        if (IMAGE_KEY.test(k)) out.push({ path: [...path, k], kind: "image" });
-        else if (ALT_KEY.test(k)) out.push({ path: [...path, k], kind: "alt" });
+        // ALT is checked FIRST: "imageAlt" contains "image", so testing
+        // IMAGE_KEY first classified the alt-text field as an image and gave it
+        // a file uploader — people then uploaded pictures into the alt field
+        // while the real imageUrl stayed empty.
+        if (ALT_KEY.test(k)) out.push({ path: [...path, k], kind: "alt" });
+        else if (IMAGE_KEY.test(k)) out.push({ path: [...path, k], kind: "image" });
       } else if (v && typeof v === "object") {
         collectFields(v, [...path, k], out);
       }

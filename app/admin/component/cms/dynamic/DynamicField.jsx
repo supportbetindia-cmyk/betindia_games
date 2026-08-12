@@ -15,6 +15,12 @@ import { detectType } from "./utils";
 // "icon" is deliberately excluded (those hold lucide icon names, not images).
 const IMAGE_LABEL = /\b(image|img|photo|banner|thumbnail|picture|logo|cover|avatar)\b/i;
 
+// Alt-text fields hold a description, not a URL — but "imageAlt" humanizes to
+// "Image Alt", which matches IMAGE_LABEL above. Without this they'd render an
+// upload widget, so people uploaded pictures into the alt field while the real
+// image field stayed empty. Alt always wins.
+const ALT_LABEL = /\balt\b/i;
+
 /**
  * The recursive dispatcher: picks a field component from the value's type.
  * Works for any JSON structure — no field names are hardcoded.
@@ -33,7 +39,8 @@ export default function DynamicField({ label, value, onChange }) {
   const isImageLeaf =
     (type === "text" || type === "null" || type === "textarea") &&
     typeof label === "string" &&
-    IMAGE_LABEL.test(label);
+    IMAGE_LABEL.test(label) &&
+    !ALT_LABEL.test(label);
   if (isImageLeaf)
     return <ImageField label={label} value={value ?? ""} onChange={onChange} />;
   if (type === "text" || type === "null")

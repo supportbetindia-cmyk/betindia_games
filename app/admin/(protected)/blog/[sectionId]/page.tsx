@@ -9,6 +9,7 @@ import { blogContent } from "@/data/blog";
 import DynamicField from "../../../component/cms/dynamic/DynamicField";
 import { humanize } from "../../../component/cms/dynamic/utils";
 import { useToast, ToastHost } from "@/components/admin/Toast";
+import { revalidateContent } from "../../content/actions";
 
 const PAGE_ID = "blog";
 
@@ -51,6 +52,12 @@ export default function BlogSectionEditor() {
     setSaving(true);
     try {
       await saveSection(PAGE_ID, sectionId, form);
+      // Purge the cached /blog render so the edit is visible immediately.
+      try {
+        await revalidateContent(PAGE_ID);
+      } catch {
+        // Non-fatal: the page still refreshes on its next revalidate.
+      }
       showToast("success", "Changes saved.");
     } catch (err) {
       console.error("Failed to save section", err);

@@ -25,12 +25,6 @@ function getSupabase(): SupabaseClient | null {
   return client;
 }
 
-/**
- * Upload an image file to Supabase Storage and resolve to its public URL.
- *
- * @param file   The image File (from an <input type="file">).
- * @param folder Sub-folder within the bucket, e.g. "cms" or "blog".
- */
 export async function uploadToSupabase(file: File, folder = "cms"): Promise<string> {
   const supabase = getSupabase();
   if (!supabase) {

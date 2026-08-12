@@ -29,7 +29,7 @@ export default function SportsHero({
   const mobileHeroImage = content.imageUrlMobile?.trim() || DEFAULT_HERO_MOBILE;
 
   return (
-    <section className="bg-[#050B18]   md:px-0 md:pt-0">
+    <>
       {/* Mobile hero poster with HTML text overlaid on the image. */}
       <MobileHeroBanner
         image={mobileHeroImage}
@@ -44,20 +44,22 @@ export default function SportsHero({
       />
 
       {/* Desktop hero */}
-      <div className="relative hidden min-h-[500px] overflow-hidden md:block">
-        <div className="absolute inset-0 z-0 pointer-events-none select-none">
-          <img
-            src={heroImage}
-            alt=""
-            className="h-full w-full object-cover object-center"
-          />
-        </div>
+      <section className="relative hidden items-center overflow-hidden bg-[#050B18] min-h-[480px] sm:min-h-[400px] md:flex md:min-h-[500px]">
+        {heroImage && (
+          <div className="absolute inset-0 z-0 pointer-events-none select-none">
+            <img
+              src={heroImage}
+              alt=""
+              className="h-full w-full object-cover object-center"
+            />
+          </div>
+        )}
 
         <div aria-hidden className="pointer-events-none absolute -left-40 -top-40 z-[1] h-[520px] w-[520px] rounded-full bg-[#FF6B00]/10 blur-3xl" />
         <div aria-hidden className="pointer-events-none absolute -bottom-40 -right-20 z-[1] h-[460px] w-[460px] rounded-full bg-[#138808]/10 blur-3xl" />
 
-        <div className="relative z-10 mx-auto flex min-h-[500px] w-full max-w-7xl items-center px-4 py-[58px] sm:px-6 lg:px-8 lg:py-[86px]">
-          <div className="flex w-full max-w-3xl flex-col items-start text-left">
+        <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-[58px] sm:px-6 lg:px-8 lg:py-[86px]">
+          <div className="flex flex-col items-center text-center md:items-start md:text-left max-w-3xl">
             <h1 className="mt-4 tracking-tight text-white sm:mt-6">
               {content.title} {content.highlightedTitle}
             </h1>
@@ -83,7 +85,7 @@ export default function SportsHero({
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }

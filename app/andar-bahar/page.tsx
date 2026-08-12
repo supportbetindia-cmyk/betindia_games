@@ -110,7 +110,7 @@ export default async function AndarBaharPage() {
           secondaryLabel={hero.secondaryCta}
         />
         <Breadcrumbs items={[{ label: "Casino Games", href: "/casino" }, { label: "Andar Bahar Online" }]} />
-        <section className="relative hidden overflow-hidden bg-[#050B18] min-h-[420px] md:block md:min-h-[520px]">
+        <section className="relative hidden items-center overflow-hidden bg-[#050B18] min-h-[480px] sm:min-h-[400px] md:flex md:min-h-[500px]">
           {hero.imageUrl && (
             <div className="absolute inset-0 z-0 pointer-events-none select-none">
               <img
@@ -122,7 +122,7 @@ export default async function AndarBaharPage() {
           )}
        
 
-          <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-10 px-4 py-[58px] sm:px-6 lg:grid-cols-2 lg:gap-14 lg:px-8 lg:py-[86px]">
+          <div className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-[58px] sm:px-6 lg:grid-cols-2 lg:gap-14 lg:px-8 lg:py-[86px]">
             {/* Left — copy */}
             <div className="flex flex-col items-center text-center md:items-start md:text-left max-w-3xl">
             
