@@ -118,7 +118,7 @@ export default function Header() {
           </button>
         </div>
 
-        {/* Mobile Sub-bar: Always-visible LOGIN (Orange) & REGISTER (Green) Buttons */}
+        {/* Mobile Sub-bar: Always-visible LOGIN (Orange) & DOWNLOAD (Green) Buttons */}
         <div className="border-t border-white/[0.08] px-4 py-2.5 md:hidden">
           <div className="mx-auto grid max-w-md grid-cols-2 gap-3">
             <Link
@@ -128,13 +128,14 @@ export default function Header() {
             >
               LOGIN
             </Link>
-            <Link
-              href={CTA_LINKS.signup}
+            <a
+              href="/betindia.apk"
+              download
               onClick={() => setMenuOpen(false)}
               className="flex items-center justify-center rounded-lg bg-[#138808] py-2.5 text-center text-sm font-extrabold uppercase tracking-wider text-white shadow-md shadow-[#138808]/20 transition-all active:scale-[0.98]"
             >
-              REGISTER
-            </Link>
+              DOWNLOAD
+            </a>
           </div>
         </div>
 
@@ -158,14 +159,13 @@ export default function Header() {
                 </Link>
               ))}
               <div className="mt-2 border-t border-white/10 pt-3">
-                <a
-                  href="/betindia.apk"
-                  download
+                <Link
+                  href={CTA_LINKS.signup}
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center justify-center rounded-lg border border-white/20 py-2.5 text-center text-sm font-semibold text-white transition-all hover:border-[#FF6B00] hover:text-[#FF6B00]"
+                  className="flex items-center justify-center rounded-lg bg-[#138808] py-2.5 text-center text-sm font-extrabold uppercase tracking-wider text-white shadow-md shadow-[#138808]/20 transition-all active:scale-[0.98]"
                 >
-                  Download App
-                </a>
+                  REGISTER NOW
+                </Link>
               </div>
             </div>
           </div>
