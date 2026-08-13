@@ -93,16 +93,10 @@ export default function Header() {
             >
               Login
             </Link>
-            <Link
-              href={CTA_LINKS.signup}
-              className="rounded-lg bg-[#138808] px-5 py-2 text-sm font-bold uppercase tracking-wide text-white shadow-md shadow-[#138808]/20 transition-all duration-200 hover:bg-[#16A30A]"
-            >
-              Register
-            </Link>
             <a
               href="/betindia.apk"
               download
-              className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:border-[#FF6B00] hover:text-[#FF6B00]"
+              className="rounded-lg bg-[#138808] px-5 py-2 text-sm font-bold uppercase tracking-wide text-white shadow-md shadow-[#138808]/20 transition-all duration-200 hover:bg-[#16A30A]"
             >
               Download
             </a>
@@ -158,15 +152,6 @@ export default function Header() {
                   {label}
                 </Link>
               ))}
-              <div className="mt-2 border-t border-white/10 pt-3">
-                <Link
-                  href={CTA_LINKS.signup}
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center justify-center rounded-lg bg-[#138808] py-2.5 text-center text-sm font-extrabold uppercase tracking-wider text-white shadow-md shadow-[#138808]/20 transition-all active:scale-[0.98]"
-                >
-                  REGISTER NOW
-                </Link>
-              </div>
             </div>
           </div>
         )}
