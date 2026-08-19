@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Minus } from "lucide-react";
 import { homeContent } from "@/data/home";
+import { pageFaqSchema } from "@/lib/schema";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -144,56 +145,65 @@ export default function FAQ({
   const faqItems: faq[] =
     data.items && data.items.length > 0 ? data.items : (defaultContent.items ?? []);
   const heading = data.heading ?? "";
+  const faqSchemaData = pageFaqSchema(faqItems);
 
   return (
-    <section className="relative overflow-hidden bg-[#050B18] px-4 py-16 sm:px-6 md:py-24 lg:px-8">
-      {/* Ambient glows */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-0 h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#FF6B00]/6 blur-2xl"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute bottom-0 left-1/2 h-[320px] w-[320px] -translate-x-1/2 translate-y-1/2 rounded-full bg-[#138808]/6 blur-2xl"
-      />
+    <>
+      {faqSchemaData && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchemaData) }}
+        />
+      )}
+      <section className="relative overflow-hidden bg-[#050B18] px-4 py-16 sm:px-6 md:py-24 lg:px-8">
+        {/* Ambient glows */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-0 h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#FF6B00]/6 blur-2xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute bottom-0 left-1/2 h-[320px] w-[320px] -translate-x-1/2 translate-y-1/2 rounded-full bg-[#138808]/6 blur-2xl"
+        />
 
-      <div className="relative z-10 mx-auto max-w-7xl">
-        {/* Header */}
-        <div className="mb-12 text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-300 backdrop-blur-md">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#138808]" />
-            {data.badge}
-          </span>
+        <div className="relative z-10 mx-auto max-w-7xl">
+          {/* Header */}
+          <div className="mb-12 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-300 backdrop-blur-md">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#138808]" />
+              {data.badge}
+            </span>
 
-          <h2 className="mt-5 text-2xl font-extrabold leading-tight tracking-tight text-white md:text-3xl lg:text-4xl">
-            {heading.endsWith("Questions") ? (
-              <>
-                {heading.slice(0, -9)}{" "}
-                <span className="bg-gradient-to-r from-[#FF6B00] to-[#138808] bg-clip-text text-transparent">
-                  Questions
-                </span>
-              </>
-            ) : (
-              heading
-            )}
-          </h2>
+            <h2 className="mt-5 text-2xl font-extrabold leading-tight tracking-tight text-white md:text-3xl lg:text-4xl">
+              {heading.endsWith("Questions") ? (
+                <>
+                  {heading.slice(0, -9)}{" "}
+                  <span className="bg-gradient-to-r from-[#FF6B00] to-[#138808] bg-clip-text text-transparent">
+                    Questions
+                  </span>
+                </>
+              ) : (
+                heading
+              )}
+            </h2>
 
-          
+            
+          </div>
+
+          {/* Accordion — centered, max 900px */}
+          <div className="mx-auto max-w-[900px] space-y-3">
+            {faqItems.map((item, i) => (
+              <AccordionItem
+                key={item.question}
+                item={item}
+                index={i}
+                isOpen={openIndex === i}
+                onToggle={() => toggle(i)}
+              />
+            ))}
+          </div>
         </div>
-
-        {/* Accordion — centered, max 900px */}
-        <div className="mx-auto max-w-[900px] space-y-3">
-          {faqItems.map((item, i) => (
-            <AccordionItem
-              key={item.question}
-              item={item}
-              index={i}
-              isOpen={openIndex === i}
-              onToggle={() => toggle(i)}
-            />
-          ))}
-        </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }

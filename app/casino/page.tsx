@@ -49,65 +49,6 @@ export default async function CasinoPage() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            "mainEntity": [
-              {
-                "@type": "Question",
-                "name": "Is BetIndia a trusted online casino in India?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "BetIndia offers secure gameplay, fast withdrawals, live casino games, and premium entertainment for players across India.",
-                },
-              },
-              {
-                "@type": "Question",
-                "name": "Can I play casino games on mobile devices?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Yes, BetIndia is fully optimized for mobile, tablet, and desktop devices, allowing players to enjoy casino games anytime and anywhere.",
-                },
-              },
-              {
-                "@type": "Question",
-                "name": "Which casino games are most popular on BetIndia?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Popular games include Live Blackjack, Live Roulette, Live Baccarat, Online Slots, Teen Patti, and Aviator.",
-                },
-              },
-              {
-                "@type": "Question",
-                "name": "Can I play Live Casino Games online in India?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Yes, BetIndia offers Live Blackjack, Live Roulette, and Live Baccarat with professional dealers and real-time gameplay.",
-                },
-              },
-              {
-                "@type": "Question",
-                "name": "Are online slot games available on BetIndia?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Yes, players can enjoy a wide range of online slot games featuring jackpots, bonus rounds, free spins, and exciting themes.",
-                },
-              },
-              {
-                "@type": "Question",
-                "name": "What makes BetIndia one of the best online casinos in India?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "BetIndia offers live dealer casino games, secure transactions, fast withdrawals, premium gaming entertainment, and a seamless user experience across all devices.",
-                },
-              },
-            ],
-          }),
-        }}
-      />
       <main>
         {/* 1. Hero */}
         <CasinoHero content={heroContent} />

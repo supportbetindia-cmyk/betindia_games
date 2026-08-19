@@ -119,6 +119,34 @@ export function faqSchema(post: BlogPost) {
   };
 }
 
+export function pageFaqSchema(
+  items?: { question?: string; answer?: string }[] | null
+) {
+  if (!items || items.length === 0) return null;
+
+  const mainEntity = items
+    .filter(
+      (item): item is { question: string; answer: string } =>
+        Boolean(item && item.question && item.answer)
+    )
+    .map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    }));
+
+  if (mainEntity.length === 0) return null;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity,
+  };
+}
+
 export function breadcrumbSchema(
   items: { name: string; url: string }[]
 ) {
