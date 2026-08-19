@@ -181,10 +181,14 @@ export default function BlogPostEditor() {
 
   // Total markdown links the parser found — surfaced in the Detection Summary
   // so it's obvious the links survived the paste.
+  // Headings are counted too — a link can legitimately sit in a heading, and
+  // leaving them out made the summary report "None found" on articles that
+  // clearly had links.
   const parsedLinkCount = parsedResult
     ? parsedResult.sections.reduce(
         (n, s) =>
           n +
+          countMarkdownLinks(s.heading) +
           countMarkdownLinks(s.content) +
           (s.bullets || []).reduce((m, b) => m + countMarkdownLinks(b), 0),
         0

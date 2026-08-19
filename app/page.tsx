@@ -62,7 +62,57 @@ export default async function Home() {
 
   return (
     <>
-     
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is a Cricket Betting ID?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "A Cricket Betting ID allows users to access online cricket betting markets and place bets on live cricket matches and sporting events.",
+                },
+              },
+              {
+                "@type": "Question",
+                "name": "Can I play Live Casino Games online?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. BetIndia offers Live Blackjack, Live Roulette, Live Baccarat, Online Slots, Teen Patti, Aviator, and more.",
+                },
+              },
+              {
+                "@type": "Question",
+                "name": "How do I get a Cricket Betting ID?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Simply register on BetIndia and gain access to live sports betting markets, cricket betting, and casino games.",
+                },
+              },
+              {
+                "@type": "Question",
+                "name": "What games are available on BetIndia?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Players can enjoy Online Slots, Teen Patti, Aviator, Live Blackjack, Live Roulette, Live Baccarat, and multiple sports betting options.",
+                },
+              },
+              {
+                "@type": "Question",
+                "name": "Why choose BetIndia?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "BetIndia offers secure gaming, fast withdrawals, premium odds, trusted payment methods, and a complete online betting and casino experience.",
+                },
+              },
+            ],
+          }),
+        }}
+      />
       <main>
         {/* 1. Hero */}
         <Hero content={page.hero || homeContent.hero} />

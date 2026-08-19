@@ -56,6 +56,49 @@ export default async function SportsPage() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is live sports betting?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Live sports betting allows players to place bets while a match is in progress with odds updating in real time.",
+                },
+              },
+              {
+                "@type": "Question",
+                "name": "Which sports can I bet on?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "You can bet on cricket, football, tennis, badminton, volleyball, kabaddi, and many other sports.",
+                },
+              },
+              {
+                "@type": "Question",
+                "name": "What betting markets are available?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Popular markets include Match Winner, Toss Winner, Top Batsman, Top Bowler, and Over/Under betting.",
+                },
+              },
+              {
+                "@type": "Question",
+                "name": "Are withdrawals processed quickly?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Most withdrawals are processed quickly through supported payment methods.",
+                },
+              },
+            ],
+          }),
+        }}
+      />
       <main>
         {/* 1. Hero */}
         <SportsHero content={heroContent} />

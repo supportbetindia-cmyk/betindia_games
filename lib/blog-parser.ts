@@ -34,7 +34,15 @@ export function convertUrlsToMarkdown(text: string): string {
         cleanUrl = cleanUrl.slice(0, -1);
       }
       const href = cleanUrl.toLowerCase().startsWith("www.") ? `https://${cleanUrl}` : cleanUrl;
-      return `[${cleanUrl}](${href})${trailingPunct}`;
+      // Label with the readable domain rather than the whole URL — a bare link
+      // used to render as "https://site.com/a/b/c.html" in the middle of a
+      // sentence. Pasted rich text keeps its real anchor text via
+      // htmlToArticleText(); this only affects URLs typed out in plain text.
+      const label = cleanUrl
+        .replace(/^https?:\/\//i, "")
+        .replace(/^www\./i, "")
+        .replace(/\/.*$/, "");
+      return `[${label || cleanUrl}](${href})${trailingPunct}`;
     }
     return match;
   });
@@ -161,17 +169,52 @@ export function parseRawArticleText(rawText: string): ParsedArticleResult {
     };
   }
 
-  // We process blocks or line-by-line if blocks contain embedded headings
+  // Structural lines (markdown heading, bold heading, numbered heading, bullet)
+  // always stand alone and must never be glued to a neighbouring line.
+  const isStructural = (line: string) =>
+    /^#{1,6}\s+/.test(line) ||
+    /^\*\*[^*]+\*\*$/.test(line) ||
+    /^\d+(\.\d+)*\.\s+/.test(line) ||
+    /^[-*•]\s+/.test(line) ||
+    /^\d+\)\s+/.test(line);
+
+  // Rejoin hard-wrapped lines into whole paragraphs.
+  //
+  // Word processors and web pages wrap a paragraph across several lines. Pushing
+  // every line separately (what this used to do) split one paragraph into
+  // fragments, and any fragment that happened to end without punctuation got
+  // misread as a heading. A line continues the previous one when the previous
+  // line has no sentence-ending punctuation AND this line starts mid-sentence
+  // (lowercase / comma / bracket) — a real heading is followed by a capitalised
+  // sentence, so it is never absorbed.
   const lines: string[] = [];
   blocks.forEach((block) => {
     const blockLines = block.split("\n").map((l) => l.trim()).filter(Boolean);
-    lines.push(...blockLines);
+    for (const current of blockLines) {
+      const prev = lines[lines.length - 1];
+      const continuesPrevious =
+        prev !== undefined &&
+        !isStructural(prev) &&
+        !isStructural(current) &&
+        !/[.!?;:]$/.test(prev) &&
+        /^[a-z0-9,(–—-]/.test(current);
+
+      if (continuesPrevious) lines[lines.length - 1] = `${prev} ${current}`;
+      else lines.push(current);
+    }
   });
 
   // Helper to determine if a line is a Heading
   function isHeading(line: string, index: number): boolean {
-    // Markdown headers (# Heading, ## Heading)
-    if (/^#{1,6}\s+/.test(line)) return true;
+    // Markdown headers (# Heading, ## Heading).
+    //
+    // Length-checked on purpose: exported/AI-generated markdown often prefixes
+    // whole paragraphs with "#", which would turn every paragraph into its own
+    // section (and hide the links inside them). A genuine heading is short, so
+    // anything longer than a headline is treated as body text and the marker is
+    // stripped later. Only length is tested — real headings often contain ":".
+    const markdownHeading = line.match(/^#{1,6}\s+(.*)$/);
+    if (markdownHeading) return markdownHeading[1].trim().length <= 110;
 
     // Bold headings (**Heading**)
     if (/^\*\*[^*]+\*\*$/.test(line)) return true;
@@ -202,9 +245,26 @@ export function parseRawArticleText(rawText: string): ParsedArticleResult {
       return true;
     }
 
-    // Short line without sentence punctuation (., !, ;)
-    const endsWithPunct = /[.!;]$/.test(line);
-    if (line.length <= 85 && !endsWithPunct && /^[A-Z0-9]/.test(line)) {
+    // Short line without sentence punctuation (., !, ;).
+    //
+    // `hasSentenceBreak` keeps prose out: a line containing "… India. Millions …"
+    // is a wrapped sentence, not a title. Headings don't have mid-line sentence
+    // punctuation, so this only excludes real paragraph text.
+    // A trailing colon introduces a list or example ("…based on live
+    // probabilities:"), so it's a lead-in sentence rather than a title. Real
+    // section names that end in ":" are already caught by headingKeywords above.
+    const endsWithPunct = /[.!;:]$/.test(line);
+    const hasSentenceBreak = /[.!?;:]\s/.test(line);
+    // Figures and formulas ("Odds of 2.50 = 1 / 2.50 = 40% Implied Probability")
+    // are body text — headings don't contain "=" or "%".
+    const looksLikeFormula = /[=%]/.test(line);
+    if (
+      line.length <= 85 &&
+      !endsWithPunct &&
+      !hasSentenceBreak &&
+      !looksLikeFormula &&
+      /^[A-Z0-9]/.test(line)
+    ) {
       const wordCount = line.split(/\s+/).length;
       if (wordCount <= 14) {
         return true;
@@ -232,8 +292,19 @@ export function parseRawArticleText(rawText: string): ParsedArticleResult {
   let currentBullets: string[] = [];
 
   lines.forEach((line, idx) => {
-    // Check if line is bullet point
-    const bulletMatch = line.match(/^[-*•]\s+(.*)$/) || line.match(/^\d+\)\s+(.*)$/);
+    // Check if line is bullet point.
+    //
+    // "1. text" is ambiguous — it's a numbered heading in an FAQ ("1. What is
+    // live betting?") but a numbered step inside a how-to list ("1. Choose a
+    // live tennis match: …"). isHeading() already separates the two (headings
+    // are short / end in "?"), so anything it rejects is treated as a list item
+    // and the "1. " prefix is stripped. Plain "-", "*", "•" and "1)" are never
+    // headings, so they're matched outright.
+    const numberedItem = line.match(/^\d+\.\s+(.*)$/);
+    const bulletMatch =
+      line.match(/^[-*•]\s+(.*)$/) ||
+      line.match(/^\d+\)\s+(.*)$/) ||
+      (numberedItem && !isHeading(line, idx) ? numberedItem : null);
     if (bulletMatch && currentHeading) {
       currentBullets.push(bulletMatch[1].trim());
       return;
@@ -264,11 +335,14 @@ export function parseRawArticleText(rawText: string): ParsedArticleResult {
 
       currentHeading = cleanH;
     } else {
-      // It's a paragraph line
-      if (!title && idx === 0 && line.length < 120) {
-        title = line;
+      // It's a paragraph line. Drop any leading "#" marker: an over-long
+      // "# …" line is body text from malformed markdown, and the marker would
+      // otherwise be shown to readers verbatim.
+      const text = line.replace(/^#{1,6}\s+/, "");
+      if (!title && idx === 0 && text.length < 120) {
+        title = text;
       } else {
-        currentParagraphs.push(line);
+        currentParagraphs.push(text);
       }
     }
   });
