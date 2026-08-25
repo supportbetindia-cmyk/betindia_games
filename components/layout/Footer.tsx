@@ -50,6 +50,7 @@ const COLUMNS: FooterColumn[] = [
       { label: "News", href: "/blog" },
       { label: "Blog", href: "/blog" },
       { label: "Responsible Gaming", href: "/responsible-gaming" },
+      { label: "Site Map", href: "https://www.betindia.games/sitemap.xml" },
     ],
   },
   {
