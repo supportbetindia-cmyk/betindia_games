@@ -38,10 +38,14 @@ export default function MobileHeroBanner({
 }) {
   return (
     <div className="bg-[#050B18] md:hidden">
-      <div className="relative flex min-h-[580px] w-full flex-col items-center justify-start overflow-hidden pt-6 pb-8 sm:min-h-[650px] sm:pt-10">
-        {/* Full height background image with object-cover */}
+      <div className="relative flex min-h-[380px] w-full flex-col items-center justify-center overflow-hidden px-4 py-8 sm:min-h-[420px] sm:py-10">
+        {/* Full-width background image with tuned focal positioning */}
         {image ? (
-          <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover object-top sm:object-center" />
+          <img
+            src={image}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover object-[center_70%] sm:object-center"
+          />
         ) : (
           <div className="absolute inset-0 h-full w-full bg-[#0A1121]" />
         )}
@@ -49,11 +53,11 @@ export default function MobileHeroBanner({
         {/* Readability gradient overlay over image. */}
         <div
           aria-hidden
-          className="absolute inset-0 z-[1] bg-gradient-to-b from-[#050B18]/90 via-[#050B18]/50 to-[#050B18]/90"
+          className="absolute inset-0 z-[1] bg-gradient-to-b from-[#050B18]/75 via-[#050B18]/40 to-[#050B18]/90"
         />
 
-        {/* Centered text overlay positioned near the top. */}
-        <div className="relative z-10 flex w-full max-w-md flex-col items-center px-5 pt-2 text-center">
+        {/* Centered text overlay positioned in the center. */}
+        <div className="relative z-10 flex w-full max-w-md flex-col items-center justify-center px-4 text-center">
           {eyebrow ? (
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF6B00]!">
               {eyebrow}
