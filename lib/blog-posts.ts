@@ -10,11 +10,21 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type BlogSection = {
+  /** Stable anchor used by the public article and table of contents. */
+  id?: string;
   heading: string;
+  headingLevel?: 2 | 3 | 4;
+  /**
+   * Legacy posts contain plain text here. Posts edited by the rich editor
+   * contain a small, sanitised HTML subset. The renderer supports both.
+   */
   content: string;
   bullets?: string[];
   tip?: string;
   image?: string;
+  imageAlt?: string;
+  imageCaption?: string;
+  imageWidth?: "small" | "medium" | "large" | "full";
 };
 
 export type BlogPost = {
@@ -28,8 +38,17 @@ export type BlogPost = {
   tags: string[];
   icon: LucideIcon;
   coverImage?: string;
+  coverImageAlt?: string;
   sections: BlogSection[];
   relatedSlugs: string[];
+  metaTitle?: string;
+  metaDescription?: string;
+  author?: string;
+  wordCount?: number;
+  readingTimeMinutes?: number;
+  headings?: { id: string; text: string; level: 2 | 3 }[];
+  publishedAt?: string;
+  updatedAt?: string;
 };
 
 // ─── Seed Articles ────────────────────────────────────────────────────────────

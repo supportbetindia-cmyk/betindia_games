@@ -211,3 +211,163 @@ main [class*="backdrop-blur"] {
 .ticker-track:hover {
   animation-play-state: paused;
 }
+/* Blog editor and public renderer share a deliberately small semantic HTML set. */
+.blog-editor-content:empty::before {
+  color: rgb(100 116 139);
+  content: attr(data-placeholder);
+  pointer-events: none;
+}
+
+.blog-editor-content p,
+.blog-rich-content p {
+  margin: 0.75rem 0;
+}
+
+.blog-editor-content h1,
+.blog-rich-content h1 {
+  margin: 1.5rem 0 0.75rem;
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.blog-editor-content h2,
+.blog-rich-content h2 {
+  margin: 1.5rem 0 0.65rem;
+  scroll-margin-top: 7rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.35;
+  color: white;
+}
+
+.blog-editor-content h3,
+.blog-rich-content h3,
+.blog-editor-content h4,
+.blog-rich-content h4 {
+  margin: 1.25rem 0 0.5rem;
+  scroll-margin-top: 7rem;
+  font-size: 1.05rem;
+  font-weight: 750;
+  line-height: 1.45;
+  color: white;
+}
+
+.blog-editor-content ul,
+.blog-rich-content ul {
+  margin: 0.75rem 0;
+  list-style: disc;
+  padding-left: 1.5rem;
+}
+
+.blog-editor-content ol,
+.blog-rich-content ol {
+  margin: 0.75rem 0;
+  list-style: decimal;
+  padding-left: 1.5rem;
+}
+
+.blog-editor-content li,
+.blog-rich-content li {
+  margin: 0.35rem 0;
+}
+
+.blog-editor-content a,
+.blog-rich-content a {
+  color: var(--blog-accent, #ff6b00);
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--blog-accent, #ff6b00) 45%, transparent);
+  text-underline-offset: 0.2em;
+}
+
+.blog-editor-content blockquote,
+.blog-rich-content blockquote {
+  margin: 1rem 0;
+  border-left: 3px solid var(--blog-accent, #ff6b00);
+  background: rgb(255 255 255 / 0.04);
+  padding: 0.8rem 1rem;
+  color: rgb(203 213 225);
+}
+
+.blog-editor-content hr,
+.blog-rich-content hr {
+  margin: 1.5rem 0;
+  border: 0;
+  border-top: 1px solid rgb(255 255 255 / 0.12);
+}
+
+.blog-editor-content pre,
+.blog-rich-content pre {
+  margin: 1rem 0;
+  overflow-x: auto;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.75rem;
+  background: #020611;
+  padding: 1rem;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.8rem;
+  line-height: 1.65;
+  color: rgb(203 213 225);
+  white-space: pre-wrap;
+}
+
+.blog-editor-content code:not(pre code),
+.blog-rich-content code:not(pre code) {
+  border-radius: 0.3rem;
+  background: rgb(255 255 255 / 0.08);
+  padding: 0.1rem 0.3rem;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.9em;
+}
+
+.blog-editor-content table,
+.blog-rich-content table {
+  margin: 1rem 0;
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.blog-editor-content th,
+.blog-editor-content td,
+.blog-rich-content th,
+.blog-rich-content td {
+  border: 1px solid rgb(255 255 255 / 0.12);
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+}
+
+.blog-editor-content th,
+.blog-rich-content th {
+  background: rgb(255 255 255 / 0.07);
+  color: white;
+}
+
+.blog-editor-content figure,
+.blog-rich-content figure {
+  margin: 1.25rem auto;
+}
+
+.blog-editor-content img,
+.blog-rich-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+}
+
+.blog-editor-content figcaption,
+.blog-rich-content figcaption {
+  padding-top: 0.45rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: rgb(100 116 139);
+}
+
+.blog-rich-content {
+  color: rgb(148 163 184);
+  font-size: 0.875rem;
+  line-height: 1.9;
+}

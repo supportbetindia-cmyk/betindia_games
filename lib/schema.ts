@@ -58,12 +58,20 @@ export function websiteSchema() {
 // ─── Article schemas ───────────────────────────────────────────────────────────
 
 export function articleSchema(post: BlogPost, url: string) {
-  const isoDate = `${parsePublishDate(post.publishDate)}T00:00:00+05:30`;
+  const legacyDate = `${parsePublishDate(post.publishDate)}T00:00:00+05:30`;
+  const publishedDate = post.publishedAt || legacyDate;
+  const modifiedDate = post.updatedAt || publishedDate;
+  const imageUrl = post.coverImage
+    ? (post.coverImage.startsWith("http") ? post.coverImage : `${SITE_URL}${post.coverImage}`)
+    : `${SITE_URL}${SITE_CONFIG.ogImage}`;
+  const author = post.author?.trim()
+    ? { "@type": "Person", name: post.author.trim() }
+    : PUBLISHER;
   return {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: post.title,
-    description: post.excerpt,
+    description: post.metaDescription || post.excerpt,
     url,
     mainEntityOfPage: {
       "@type": "WebPage",
@@ -71,17 +79,19 @@ export function articleSchema(post: BlogPost, url: string) {
     },
     image: {
       "@type": "ImageObject",
-      url: `${SITE_URL}${SITE_CONFIG.ogImage}`,
+      url: imageUrl,
       width: 1200,
       height: 630,
+      caption: post.coverImageAlt || post.title,
     },
-    author: PUBLISHER,
+    author,
     publisher: PUBLISHER,
-    datePublished: isoDate,
-    dateModified: isoDate,
+    datePublished: publishedDate,
+    dateModified: modifiedDate,
     keywords: post.tags.join(", "),
     articleSection: post.category,
     inLanguage: "en",
+    wordCount: post.wordCount,
   };
 }
 

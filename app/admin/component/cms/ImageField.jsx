@@ -8,6 +8,7 @@ export default function ImageField({
   label,
   value,
   onChange,
+  altText = "",
 }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
@@ -57,7 +58,7 @@ export default function ImageField({
         <div className="relative group overflow-hidden rounded-xl border border-white/10 bg-white/5">
           <img
             src={value}
-            alt={label}
+            alt={altText || label}
             className="h-40 w-full object-cover"
           />
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">

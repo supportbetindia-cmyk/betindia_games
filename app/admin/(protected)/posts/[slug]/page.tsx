@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   Save,
@@ -13,13 +13,14 @@ import {
   ArrowDown,
   Sparkles,
   Wand2,
-  FileText as FileTextIcon,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
   Link2 as LinkIcon,
   ExternalLink,
   Settings2,
+  Eye,
+  Cloud,
 } from "lucide-react";
 import { getAdminPost, savePost, type AdminPost, type Accent } from "@/lib/blog-admin";
 import { BLOG_ICONS } from "@/lib/blog-icons";
@@ -33,6 +34,12 @@ import {
 } from "@/lib/blog-parser";
 import { revalidateBlog } from "../actions";
 import { useToast, ToastHost } from "@/components/admin/Toast";
+import RichTextEditor from "@/components/admin/blog/RichTextEditor";
+import {
+  deriveBlogMetrics,
+  excerptFromSections,
+  normalizeSectionsWithHeadings,
+} from "@/lib/blog-content";
 
 type FormState = Omit<AdminPost, "tags" | "relatedSlugs"> & {
   tagsInput: string;
@@ -45,15 +52,6 @@ function slugify(text: string) {
     .replace(/[^a-z0-9\s-]/g, "")
     .trim()
     .replace(/\s+/g, "-");
-}
-
-function computeReadTime(sections: AdminPost["sections"]) {
-  const words = sections
-    .map((s) => [s.heading, s.content, s.tip || "", ...(s.bullets || [])].join(" "))
-    .join(" ")
-    .split(/\s+/)
-    .filter(Boolean).length;
-  return `${Math.max(1, Math.ceil(words / 200))} min read`;
 }
 
 export default function BlogPostEditor() {
@@ -72,15 +70,32 @@ export default function BlogPostEditor() {
     tagsInput: "",
     icon: "FileText",
     coverImage: "",
+    coverImageAlt: "",
     sections: [],
     relatedSlugsInput: "",
-    published: true,
+    published: false,
     featured: false,
     order: 0,
+    metaTitle: "",
+    metaDescription: "",
+    author: "BetIndia Editorial Team",
+    wordCount: 0,
+    readingTimeMinutes: 1,
+    headings: [],
+    publishedAt: "",
+    updatedAt: "",
+    revision: 0,
+    trashed: false,
   });
 
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
+  const [createdSlug, setCreatedSlug] = useState("");
+  const [saveStatus, setSaveStatus] = useState<"saved" | "unsaved" | "local" | "saving">("saved");
+  const [recoveryNotice, setRecoveryNotice] = useState<string | null>(null);
+  const [pendingRecovery, setPendingRecovery] = useState<FormState | null>(null);
+  const lastServerSnapshot = useRef("");
+  const localSaveReady = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const { toast, showToast, dismissToast } = useToast();
 
@@ -93,6 +108,12 @@ export default function BlogPostEditor() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   // Once someone edits the slug by hand, stop auto-deriving it from the title.
   const [slugEdited, setSlugEdited] = useState(false);
+
+  const derived = useMemo(() => {
+    const normalized = normalizeSectionsWithHeadings(form.sections);
+    const metrics = deriveBlogMetrics(form.title, normalized.sections);
+    return { ...metrics, headings: normalized.headings };
+  }, [form.sections, form.title]);
 
   // Auto-detect parser state
   const [showParser, setShowParser] = useState(isNew);
@@ -243,7 +264,24 @@ export default function BlogPostEditor() {
   }
 
   useEffect(() => {
-    if (isNew) return;
+    const draftKey = `betindia:blog-draft:${String(slug)}`;
+    if (isNew) {
+      try {
+        const raw = localStorage.getItem(draftKey);
+        const draft = raw ? JSON.parse(raw) : null;
+        if (draft?.form) {
+          queueMicrotask(() => {
+            setForm(draft.form as FormState);
+            setRecoveryNotice("Recovered your unsaved new article from this browser.");
+            setSaveStatus("local");
+          });
+        }
+      } catch {
+        localStorage.removeItem(draftKey);
+      }
+      localSaveReady.current = true;
+      return;
+    }
 
     async function loadPost() {
       try {
@@ -254,11 +292,24 @@ export default function BlogPostEditor() {
           return;
         }
 
-        setForm({
+        const serverForm: FormState = {
           ...post,
           tagsInput: post.tags.join(", "),
           relatedSlugsInput: post.relatedSlugs.join(", "),
-        });
+        };
+        setForm(serverForm);
+        lastServerSnapshot.current = JSON.stringify(serverForm);
+        try {
+          const raw = localStorage.getItem(draftKey);
+          const draft = raw ? JSON.parse(raw) : null;
+          if (draft?.form && draft.baseRevision === post.revision && JSON.stringify(draft.form) !== lastServerSnapshot.current) {
+            setPendingRecovery(draft.form as FormState);
+            setRecoveryNotice("A newer local recovery copy is available from this browser.");
+          }
+        } catch {
+          localStorage.removeItem(draftKey);
+        }
+        localSaveReady.current = true;
         // Start compact: existing sections open on demand.
         setCollapsedSections(post.sections.map(() => true));
       } catch (err) {
@@ -272,7 +323,25 @@ export default function BlogPostEditor() {
     loadPost();
   }, [slug, isNew]);
 
-  function handleChange(key: keyof FormState, value: any) {
+  useEffect(() => {
+    if (loading || !localSaveReady.current) return;
+    const snapshot = JSON.stringify(form);
+    if (snapshot === lastServerSnapshot.current) {
+      setSaveStatus("saved");
+      return;
+    }
+    setSaveStatus("unsaved");
+    const timer = window.setTimeout(() => {
+      localStorage.setItem(
+        `betindia:blog-draft:${String(slug)}`,
+        JSON.stringify({ form, savedAt: new Date().toISOString(), baseRevision: form.revision })
+      );
+      setSaveStatus("local");
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [form, loading, slug]);
+
+  function handleChange<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -282,7 +351,17 @@ export default function BlogPostEditor() {
       ...prev,
       sections: [
         ...prev.sections,
-        { heading: "", content: "", bullets: [], tip: "", image: "" },
+        {
+          heading: "",
+          headingLevel: 2,
+          content: "",
+          bullets: [],
+          tip: "",
+          image: "",
+          imageAlt: "",
+          imageCaption: "",
+          imageWidth: "full",
+        },
       ],
     }));
     setCollapsedSections((prev) => [...prev, false]);
@@ -304,7 +383,11 @@ export default function BlogPostEditor() {
     });
   }
 
-  function handleSectionChange(index: number, key: string, value: any) {
+  function handleSectionChange<K extends keyof AdminPost["sections"][number]>(
+    index: number,
+    key: K,
+    value: AdminPost["sections"][number][K]
+  ) {
     setForm((prev) => {
       const updated = [...prev.sections];
       updated[index] = { ...updated[index], [key]: value };
@@ -365,7 +448,7 @@ export default function BlogPostEditor() {
     });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent, publishIntent = form.published) {
     e.preventDefault();
     setError(null);
 
@@ -389,6 +472,7 @@ export default function BlogPostEditor() {
     }
 
     setSaving(true);
+    setSaveStatus("saving");
 
     try {
       // Process inputs
@@ -402,41 +486,64 @@ export default function BlogPostEditor() {
         .map((s) => s.trim())
         .filter(Boolean);
 
-      // Anything left blank gets a sensible default, so the advanced fields
-      // can be ignored entirely.
+      const normalized = normalizeSectionsWithHeadings(form.sections);
+      const metrics = deriveBlogMetrics(form.title, normalized.sections);
+      const now = new Date().toISOString();
+
+      // Anything left blank gets a sensible default, while manual SEO and read
+      // time overrides remain respected.
       const finalPost: AdminPost = {
         slug: cleanSlug,
         title: form.title.trim(),
         category: form.category.trim() || "General",
         accent: form.accent,
         excerpt:
-          form.excerpt.trim() ||
-          (form.sections[0]?.content || "")
-            .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-            .slice(0, 160)
-            .trim(),
-        readTime: form.readTime.trim() || computeReadTime(form.sections),
+          form.excerpt.trim() || excerptFromSections(normalized.sections),
+        readTime: form.readTime.trim() || metrics.readTime,
         publishDate:
           form.publishDate.trim() ||
           new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
         icon: form.icon,
         coverImage: form.coverImage.trim(),
-        published: form.published,
+        coverImageAlt: form.coverImageAlt.trim() || form.title.trim(),
+        published: publishIntent,
         featured: form.featured,
         order: Number(form.order) || 0,
-        sections: form.sections,
+        sections: normalized.sections,
         tags,
         relatedSlugs,
+        metaTitle: form.metaTitle.trim(),
+        metaDescription: form.metaDescription.trim(),
+        author: form.author.trim() || "BetIndia Editorial Team",
+        wordCount: metrics.wordCount,
+        readingTimeMinutes: metrics.readingTimeMinutes,
+        headings: normalized.headings,
+        publishedAt: form.publishedAt || (publishIntent ? now : ""),
+        updatedAt: now,
+        revision: form.revision,
+        trashed: false,
       };
 
-      await savePost(finalPost, isNew);
+      const revision = await savePost(finalPost, isNew && !createdSlug);
       await revalidateBlog(cleanSlug);
+      const savedForm: FormState = {
+        ...finalPost,
+        revision,
+        tagsInput: tags.join(", "),
+        relatedSlugsInput: relatedSlugs.join(", "),
+      };
+      lastServerSnapshot.current = JSON.stringify(savedForm);
+      setForm(savedForm);
+      localStorage.removeItem(`betindia:blog-draft:${String(slug)}`);
+      setSaveStatus("saved");
       showToast(
         "success",
-        form.published ? "Post saved and published." : "Post saved as a draft."
+        publishIntent ? "Post saved and published." : "Post saved as a draft."
       );
-      // Give the toast a beat to register before leaving the page.
-      setTimeout(() => router.push("/admin/posts"), 900);
+      if (isNew && !createdSlug) {
+        setCreatedSlug(cleanSlug);
+        router.replace(`/admin/posts/${cleanSlug}`);
+      }
     } catch (err) {
       console.error("Failed to save post", err);
       const message =
@@ -457,6 +564,8 @@ export default function BlogPostEditor() {
     );
   }
 
+  const activeSlug = createdSlug || (!isNew ? String(slug) : form.slug);
+
   return (
     <div className="mx-auto max-w-5xl space-y-6 text-white pb-20">
       <Link
@@ -473,14 +582,61 @@ export default function BlogPostEditor() {
             Blog Manager
           </p>
           <h1 className="mt-1 text-3xl font-extrabold">
-            {isNew ? "Create New Article" : `Edit: ${form.title}`}
+            {isNew && !createdSlug ? "Create New Article" : `Edit: ${form.title}`}
           </h1>
+        </div>
+        <div className="flex items-center gap-2">
+          {activeSlug && (
+            <Link
+              href={`/admin/post-preview/${activeSlug}`}
+              target="_blank"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-slate-300 transition hover:bg-white/10 hover:text-white"
+            >
+              <Eye size={15} />
+              Preview
+            </Link>
+          )}
+          <span className={`rounded-full border px-3 py-1 text-xs font-bold ${form.published ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-white/10 bg-white/5 text-slate-400"}`}>
+            {form.published ? "Published" : "Draft"}
+          </span>
         </div>
       </div>
 
       {error && (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300">
           {error}
+        </div>
+      )}
+
+      {recoveryNotice && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-200">
+          <Cloud size={16} className="shrink-0" />
+          <span className="min-w-0 flex-1 font-semibold">{recoveryNotice}</span>
+          {pendingRecovery && (
+            <button
+              type="button"
+              onClick={() => {
+                setForm(pendingRecovery);
+                setPendingRecovery(null);
+                setRecoveryNotice("Recovered local changes. Review and save when ready.");
+                setSaveStatus("local");
+              }}
+              className="rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-bold text-white"
+            >
+              Restore changes
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              if (pendingRecovery) localStorage.removeItem(`betindia:blog-draft:${String(slug)}`);
+              setPendingRecovery(null);
+              setRecoveryNotice(null);
+            }}
+            className="rounded-lg border border-sky-400/30 px-3 py-1.5 text-xs font-bold"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
@@ -723,24 +879,24 @@ export default function BlogPostEditor() {
           <ImageField
             label="Cover Image"
             value={form.coverImage}
+            altText={form.coverImageAlt || form.title}
             onChange={(url: string) => handleChange("coverImage", url)}
           />
+          {form.coverImage && (
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Cover image alt text</label>
+              <input
+                type="text"
+                value={form.coverImageAlt}
+                onChange={(e) => handleChange("coverImageAlt", e.target.value)}
+                placeholder="Describe the image for screen readers"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50"
+              />
+            </div>
+          )}
 
           {/* Visibility and Featured flags */}
           <div className="flex flex-wrap gap-6 pt-3">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.published}
-                onChange={(e) => handleChange("published", e.target.checked)}
-                className="h-4 w-4 rounded border-white/10 bg-white/5 text-[#FF6B00] outline-none transition"
-              />
-              <div>
-                <span className="block text-sm font-semibold text-white">Publish Immediately</span>
-                <span className="block text-xs text-slate-500">Uncheck to keep as draft (hidden from site).</span>
-              </div>
-            </label>
-
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -908,6 +1064,49 @@ export default function BlogPostEditor() {
           </div>
         </div>
 
+        {/* Per-post SEO overrides. Empty values continue to use the generated defaults. */}
+        <div className="rounded-2xl border border-white/[0.07] bg-white/[0.04] p-6 backdrop-blur-xl space-y-5">
+          <div className="border-b border-white/[0.05] pb-3">
+            <h2 className="text-lg font-bold text-white">SEO &amp; Author</h2>
+            <p className="mt-1 text-xs text-slate-500">Leave SEO fields empty to use the article title and excerpt automatically.</p>
+          </div>
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Meta title</label>
+              <input
+                type="text"
+                maxLength={70}
+                value={form.metaTitle}
+                onChange={(e) => handleChange("metaTitle", e.target.value)}
+                placeholder={`${form.title || "Article title"} | BetIndia`}
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50"
+              />
+              <p className="text-[10px] text-slate-500">{form.metaTitle.length}/70</p>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Author</label>
+              <input
+                type="text"
+                value={form.author}
+                onChange={(e) => handleChange("author", e.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Meta description</label>
+            <textarea
+              maxLength={170}
+              rows={3}
+              value={form.metaDescription}
+              onChange={(e) => handleChange("metaDescription", e.target.value)}
+              placeholder={form.excerpt || "Generated from the article excerpt"}
+              className="w-full resize-y rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50"
+            />
+            <p className="text-[10px] text-slate-500">{form.metaDescription.length}/170</p>
+          </div>
+        </div>
+
         {/* Dynamic Sections list */}
         <div className="rounded-2xl border border-white/[0.07] bg-white/[0.04] p-6 backdrop-blur-xl space-y-6">
           <div className="flex items-center justify-between border-b border-white/[0.05] pb-3">
@@ -917,7 +1116,7 @@ export default function BlogPostEditor() {
                 Content Sections ({form.sections.length})
               </h2>
               <p className="text-xs text-slate-500 mt-1">
-                Add one or more headings and details to construct the body of this blog post.
+                Add H2/H3 sections, then format paragraphs with the sticky toolbar. {derived.wordCount} words · {derived.readTime}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -952,9 +1151,12 @@ export default function BlogPostEditor() {
                 const isCollapsed = collapsedSections[index] === true;
                 const sectionLinks =
                   countMarkdownLinks(section.content) +
+                  (section.content.match(/<a\s[^>]*href=/gi) || []).length +
                   countMarkdownLinks(section.tip || "") +
                   (section.bullets || []).reduce((n, b) => n + countMarkdownLinks(b), 0);
-                const paraCount = (section.content || "").split(/\n\n+/).filter(Boolean).length;
+                const paraCount = section.content.includes("<p")
+                  ? (section.content.match(/<p(?:\s|>)/gi) || []).length
+                  : (section.content || "").split(/\n\n+/).filter(Boolean).length;
                 return (
                 <div
                   key={index}
@@ -1013,7 +1215,22 @@ export default function BlogPostEditor() {
                   {!isCollapsed && (
                   <div className="grid grid-cols-1 gap-4">
                     {/* Section Heading */}
-                    <div className="space-y-1.5">
+                    <div className="grid gap-3 md:grid-cols-[110px_1fr]">
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                          Level
+                        </label>
+                        <select
+                          value={section.headingLevel || 2}
+                          onChange={(e) => handleSectionChange(index, "headingLevel", Number(e.target.value) as 2 | 3 | 4)}
+                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[#FF6B00]/50 [&>option]:bg-[#030810]"
+                        >
+                          <option value={2}>H2</option>
+                          <option value={3}>H3</option>
+                          <option value={4}>H4</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1.5">
                       <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                         Heading
                       </label>
@@ -1024,39 +1241,18 @@ export default function BlogPostEditor() {
                         onChange={(e) => handleSectionChange(index, "heading", e.target.value)}
                         className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition"
                       />
+                      </div>
                     </div>
 
                     {/* Section Content */}
                     <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                          Paragraph Text
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => openLinkModal("content", index)}
-                          className="inline-flex items-center gap-1 rounded border border-[#FF6B00]/40 bg-[#FF6B00]/10 hover:bg-[#FF6B00]/20 px-2 py-0.5 text-[10px] font-bold text-[#FF6B00] transition cursor-pointer"
-                        >
-                          <LinkIcon size={11} />
-                          Add Link
-                        </button>
-                      </div>
-                      <textarea
-                        placeholder="Write paragraph content here... (Tip: use [Link Text](URL) to format links)"
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                        Rich content
+                      </label>
+                      <RichTextEditor
+                        label={`Content for ${section.heading || `section ${index + 1}`}`}
                         value={section.content}
-                        onChange={(e) => handleSectionChange(index, "content", e.target.value)}
-                        onPaste={(e) => {
-                          const converted = richPasteToText(e);
-                          if (!converted) return;
-                          e.preventDefault();
-                          handleSectionChange(
-                            index,
-                            "content",
-                            insertAtSelection(e.currentTarget, section.content || "", converted)
-                          );
-                        }}
-                        rows={6}
-                        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-[#FF6B00]/50 transition resize-y"
+                        onChange={(html) => handleSectionChange(index, "content", html)}
                       />
                     </div>
 
@@ -1088,8 +1284,46 @@ export default function BlogPostEditor() {
                     <ImageField
                       label="Section Image (Optional)"
                       value={section.image || ""}
+                      altText={section.imageAlt || section.heading}
                       onChange={(url: string) => handleSectionChange(index, "image", url)}
                     />
+                    {section.image && (
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Image alt text</label>
+                          <input
+                            type="text"
+                            value={section.imageAlt || ""}
+                            onChange={(e) => handleSectionChange(index, "imageAlt", e.target.value)}
+                            placeholder="Describe this image"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white outline-none focus:border-[#FF6B00]/50"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Display width</label>
+                          <select
+                            value={section.imageWidth || "full"}
+                            onChange={(e) => handleSectionChange(index, "imageWidth", e.target.value as "small" | "medium" | "large" | "full")}
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white outline-none focus:border-[#FF6B00]/50 [&>option]:bg-[#030810]"
+                          >
+                            <option value="small">Small</option>
+                            <option value="medium">Medium</option>
+                            <option value="large">Large</option>
+                            <option value="full">Full width</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1.5 md:col-span-2">
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">Image caption</label>
+                          <input
+                            type="text"
+                            value={section.imageCaption || ""}
+                            onChange={(e) => handleSectionChange(index, "imageCaption", e.target.value)}
+                            placeholder="Optional caption shown below the image"
+                            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white outline-none focus:border-[#FF6B00]/50"
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     {/* Section Bullets */}
                     <div className="space-y-3 pt-2">
@@ -1151,13 +1385,16 @@ export default function BlogPostEditor() {
 
         {/* Sticky save bar — always visible, no scrolling to the bottom needed */}
         <div className="sticky bottom-4 z-20 flex items-center gap-3 rounded-2xl border border-white/10 bg-[#070F22]/95 px-4 py-3 shadow-2xl shadow-black/50 backdrop-blur-xl">
-          <span className="hidden min-w-0 flex-1 truncate text-xs font-medium text-slate-500 sm:block">
+          <span className="hidden min-w-0 flex-1 truncate text-xs font-medium text-slate-400 sm:block">
             {error ? (
               <span className="font-semibold text-red-300">{error}</span>
             ) : (
-              `${form.sections.length} section${form.sections.length === 1 ? "" : "s"} · ${
-                form.published ? "publishes on save" : "saves as draft"
-              }`
+              <span className="inline-flex items-center gap-2">
+                {saveStatus === "saving" && <Loader2 size={12} className="animate-spin text-[#FF6B00]" />}
+                {saveStatus === "saved" ? "All changes saved" : saveStatus === "local" ? "Recovery copy saved locally" : saveStatus === "saving" ? "Saving to Firestore…" : "Unsaved changes"}
+                <span className="text-slate-600">·</span>
+                {derived.wordCount} words · {derived.readTime} · {derived.headings.length} TOC entries
+              </span>
             )}
           </span>
           <Link
@@ -1167,12 +1404,22 @@ export default function BlogPostEditor() {
             Cancel
           </Link>
           <button
-            type="submit"
+            type="button"
+            onClick={(e) => void handleSubmit(e, false)}
+            disabled={saving}
+            className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-slate-300 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            {form.published ? "Unpublish" : "Save Draft"}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => void handleSubmit(e, true)}
             disabled={saving}
             className="flex items-center justify-center gap-2 rounded-xl bg-[#FF6B00] hover:bg-[#FF8A00] px-6 py-2.5 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer shadow-lg shadow-[#FF6B00]/20"
           >
-            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            {saving ? "Saving…" : "Save Blog Post"}
+            {saving ? <Loader2 size={16} className="animate-spin" /> : <ExternalLink size={16} />}
+            {form.published ? "Update Published" : "Publish"}
           </button>
         </div>
       </form>

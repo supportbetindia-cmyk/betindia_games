@@ -27,12 +27,29 @@ type PostDoc = {
   tags?: string[];
   icon?: string;
   coverImage?: string;
+  coverImageAlt?: string;
   sections?: BlogSection[];
   relatedSlugs?: string[];
   published?: boolean;
   featured?: boolean;
   order?: number;
+  metaTitle?: string;
+  metaDescription?: string;
+  author?: string;
+  wordCount?: number;
+  readingTimeMinutes?: number;
+  headings?: { id: string; text: string; level: 2 | 3 }[];
+  publishedAt?: unknown;
+  updatedAt?: unknown;
+  trashed?: boolean;
 };
+
+function timestampToIso(value: unknown): string | undefined {
+  if (value && typeof value === "object" && "toDate" in value && typeof value.toDate === "function") {
+    return value.toDate().toISOString();
+  }
+  return typeof value === "string" ? value : undefined;
+}
 
 // Map a Firestore document into the `BlogPost` shape the UI already expects
 // (resolving the icon name back into a Lucide component).
@@ -48,12 +65,21 @@ function toPost(data: PostDoc): BlogPost {
     tags: data.tags ?? [],
     icon: iconFromName(data.icon),
     coverImage: data.coverImage,
+    coverImageAlt: data.coverImageAlt,
     sections: data.sections ?? [],
     relatedSlugs: data.relatedSlugs ?? [],
+    metaTitle: data.metaTitle,
+    metaDescription: data.metaDescription,
+    author: data.author,
+    wordCount: data.wordCount,
+    readingTimeMinutes: data.readingTimeMinutes,
+    headings: data.headings,
+    publishedAt: timestampToIso(data.publishedAt),
+    updatedAt: timestampToIso(data.updatedAt),
   };
 }
 
-const isPublished = (d: PostDoc) => d.published !== false;
+const isPublished = (d: PostDoc) => d.published !== false && d.trashed !== true;
 
 const postsCollection = () => collection(db, "posts");
 

@@ -285,13 +285,18 @@ export function parseRawArticleText(rawText: string): ParsedArticleResult {
 
   let title = "";
   let introParagraphs: string[] = [];
+  // Bullets that appear before the first heading belong to the intro/Overview
+  // section. Without this they were dropped into paragraphs with the raw "*"
+  // marker still attached, which readers then saw verbatim.
+  let introBullets: string[] = [];
   const rawSections: { heading: string; paragraphs: string[]; bullets: string[] }[] = [];
 
   let currentHeading = "";
   let currentParagraphs: string[] = [];
   let currentBullets: string[] = [];
 
-  lines.forEach((line, idx) => {
+  lines.forEach((rawLine, idx) => {
+    let line = rawLine;
     // Check if line is bullet point.
     //
     // "1. text" is ambiguous — it's a numbered heading in an FAQ ("1. What is
@@ -305,9 +310,19 @@ export function parseRawArticleText(rawText: string): ParsedArticleResult {
       line.match(/^[-*•]\s+(.*)$/) ||
       line.match(/^\d+\)\s+(.*)$/) ||
       (numberedItem && !isHeading(line, idx) ? numberedItem : null);
-    if (bulletMatch && currentHeading) {
-      currentBullets.push(bulletMatch[1].trim());
-      return;
+    if (bulletMatch) {
+      const itemText = bulletMatch[1].trim();
+      // An FAQ written as a markdown list ("- 1. What is X?") is a question,
+      // not a list item: its answer sits on the following line and has to
+      // attach to it. Kept as a bullet, every question collapsed into one
+      // bullet list while all the answers merged into a single paragraph.
+      // Promote it to a heading instead and let the normal flow continue.
+      const isQuestionItem = itemText.endsWith("?") && itemText.length <= 120;
+      if (!isQuestionItem) {
+        currentBullets.push(itemText);
+        return;
+      }
+      line = itemText;
     }
 
     if (isHeading(line, idx)) {
@@ -328,9 +343,11 @@ export function parseRawArticleText(rawText: string): ParsedArticleResult {
         });
         currentParagraphs = [];
         currentBullets = [];
-      } else if (currentParagraphs.length > 0) {
+      } else if (currentParagraphs.length > 0 || currentBullets.length > 0) {
         introParagraphs = [...currentParagraphs];
+        introBullets = [...currentBullets];
         currentParagraphs = [];
+        currentBullets = [];
       }
 
       currentHeading = cleanH;
@@ -354,17 +371,19 @@ export function parseRawArticleText(rawText: string): ParsedArticleResult {
       paragraphs: currentParagraphs,
       bullets: currentBullets,
     });
-  } else if (currentParagraphs.length > 0) {
+  } else {
     introParagraphs.push(...currentParagraphs);
+    introBullets.push(...currentBullets);
   }
 
   // Build final sections
   const sections: BlogSection[] = [];
 
-  if (introParagraphs.length > 0) {
+  if (introParagraphs.length > 0 || introBullets.length > 0) {
     sections.push({
       heading: "Overview",
       content: introParagraphs.join("\n\n"),
+      ...(introBullets.length > 0 ? { bullets: introBullets } : {}),
     });
   }
 

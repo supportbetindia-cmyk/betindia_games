@@ -6,6 +6,8 @@ import { getPostBySlug, getRelatedPosts, getAllSlugs } from "@/lib/blog-data";
 import { CTA_LINKS } from "@/lib/cta-links";
 import { SITE_CONFIG, canonicalUrl } from "@/lib/seo";
 import { articleSchema, faqSchema, breadcrumbSchema, parsePublishDate } from "@/lib/schema";
+import { isRichBlogContent, normalizeSectionsWithHeadings, type BlogHeading } from "@/lib/blog-content";
+import { sanitizeBlogHtml } from "@/lib/blog-html";
 
 
 export const revalidate = 300;
@@ -29,32 +31,40 @@ export async function generateMetadata({
   if (!post) return { title: "Not Found" };
 
   const url = canonicalUrl(`/blog/${slug}`);
-  const isoDate = `${parsePublishDate(post.publishDate)}T00:00:00+05:30`;
-  const ogTitle = `${post.title} | BetIndia`;
+  const legacyDate = `${parsePublishDate(post.publishDate)}T00:00:00+05:30`;
+  const publishedTime = post.publishedAt || legacyDate;
+  const modifiedTime = post.updatedAt || publishedTime;
+  const resolvedTitle = post.metaTitle?.trim() || post.title;
+  const resolvedDescription = post.metaDescription?.trim() || post.excerpt;
+  const shareImage = post.coverImage || SITE_CONFIG.ogImage;
+  const ogTitle = post.metaTitle?.trim() || `${post.title} | BetIndia`;
 
   return {
-    title: post.title,
-    description: post.excerpt,
+    title: post.metaTitle?.trim() ? { absolute: resolvedTitle } : resolvedTitle,
+    description: resolvedDescription,
     keywords: post.tags,
+    authors: [{ name: post.author || SITE_CONFIG.name }],
     alternates: { canonical: url },
     openGraph: {
       type: "article",
       url,
       title: ogTitle,
-      description: post.excerpt,
+      description: resolvedDescription,
       siteName: SITE_CONFIG.name,
       locale: SITE_CONFIG.locale,
-      images: [{ url: SITE_CONFIG.ogImage, width: 1200, height: 630, alt: ogTitle }],
-      publishedTime: isoDate,
-      modifiedTime: isoDate,
+      images: [{ url: shareImage, width: 1200, height: 630, alt: post.coverImageAlt || ogTitle }],
+      publishedTime,
+      modifiedTime,
       section: post.category,
       tags: post.tags,
     },
     twitter: {
       card: "summary_large_image",
       title: ogTitle,
-      description: post.excerpt,
-      images: [SITE_CONFIG.ogImage],
+      description: resolvedDescription,
+      images: [shareImage],
+      creator: SITE_CONFIG.twitterHandle,
+      site: SITE_CONFIG.twitterHandle,
     },
   };
 }
@@ -79,6 +89,12 @@ function FormattedText({ text, accent }: { text: string; accent?: string }) {
     if (match[1] && match[2]) {
       const label = match[1];
       const url = match[2];
+      const isSafe = /^(?:https?:\/\/|mailto:|tel:|\/|#)/i.test(url);
+      if (!isSafe) {
+        parts.push(label);
+        lastIndex = matchIndex + match[0].length;
+        continue;
+      }
       const isInternal = url.startsWith("/") || url.startsWith("#");
 
       if (isInternal) {
@@ -140,7 +156,6 @@ function ArticleHero({
   readTime,
   publishDate,
   tags,
-  Icon,
 }: {
   category: string;
   accent: string;
@@ -149,7 +164,6 @@ function ArticleHero({
   readTime: string;
   publishDate: string;
   tags: string[];
-  Icon: React.ElementType;
 }) {
   return (
     <section className="relative overflow-hidden bg-[#050B18] px-4 pb-12 pt-16 sm:px-6 md:pt-20 lg:px-8">
@@ -233,11 +247,13 @@ function ArticleFeaturedImage({
   accent,
   Icon,
   image,
+  imageAlt,
 }: {
   category: string;
   accent: string;
   Icon: React.ElementType;
   image?: string;
+  imageAlt?: string;
 }) {
   // A real cover image replaces the generated placeholder when one is set.
   if (image) {
@@ -246,7 +262,7 @@ function ArticleFeaturedImage({
         <div className="mx-auto max-w-4xl">
           <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/[0.07]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={image} alt={category} className="h-full w-full object-cover" />
+            <img src={image} alt={imageAlt || category} className="h-full w-full object-cover" />
           </div>
         </div>
       </section>
@@ -403,43 +419,72 @@ function ArticleFeaturedImage({
 // ─── Section Renderer ─────────────────────────────────────────────────────────
 
 function ArticleSection({
+  id,
   heading,
+  headingLevel,
   content,
   bullets,
   tip,
   image,
+  imageAlt,
+  imageCaption,
+  imageWidth,
   accent,
-  index,
 }: {
+  id?: string;
   heading: string;
+  headingLevel?: 2 | 3 | 4;
   content: string;
   bullets?: string[];
   tip?: string;
   image?: string;
+  imageAlt?: string;
+  imageCaption?: string;
+  imageWidth?: "small" | "medium" | "large" | "full";
   accent: string;
-  index: number;
 }) {
   const paragraphs = (content || "").split(/\n\n+/).filter(Boolean);
+  const HeadingTag = (`h${headingLevel || 2}`) as "h2" | "h3" | "h4";
+  const richContent = isRichBlogContent(content);
+  const imageWidthClass = {
+    small: "max-w-sm",
+    medium: "max-w-xl",
+    large: "max-w-3xl",
+    full: "max-w-none",
+  }[imageWidth || "full"];
 
   return (
     <div className="group space-y-4">
-      <h2 className="text-lg font-extrabold leading-snug tracking-tight text-white md:text-xl">
+      <HeadingTag id={id} className="scroll-mt-28 text-lg font-extrabold leading-snug tracking-tight text-white md:text-xl">
         {heading}
-      </h2>
+      </HeadingTag>
 
-      <div className="space-y-3">
-        {paragraphs.map((para, pIdx) => (
-          <p key={pIdx} className="text-sm leading-[1.9] text-slate-400 md:text-[0.9375rem] md:leading-[1.9]">
-            <FormattedText text={para} accent={accent} />
-          </p>
-        ))}
-      </div>
+      {richContent ? (
+        <div
+          className="blog-rich-content"
+          style={{ "--blog-accent": accent } as React.CSSProperties}
+          dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(content) }}
+        />
+      ) : (
+        <div className="space-y-3">
+          {paragraphs.map((para, pIdx) => (
+            <p key={pIdx} className="text-sm leading-[1.9] text-slate-400 md:text-[0.9375rem] md:leading-[1.9]">
+              <FormattedText text={para} accent={accent} />
+            </p>
+          ))}
+        </div>
+      )}
 
       {image && (
-        <div className="overflow-hidden rounded-2xl border border-white/[0.07]">
+        <figure className={`mx-auto overflow-hidden rounded-2xl border border-white/[0.07] ${imageWidthClass}`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={image} alt={heading} className="w-full object-cover" />
-        </div>
+          <img src={image} alt={imageAlt || heading} className="w-full object-cover" loading="lazy" />
+          {imageCaption && (
+            <figcaption className="border-t border-white/[0.07] bg-white/[0.03] px-4 py-2 text-center text-xs text-slate-500">
+              {imageCaption}
+            </figcaption>
+          )}
+        </figure>
       )}
 
       {bullets && bullets.length > 0 && (
@@ -483,6 +528,24 @@ function ArticleSection({
         </div>
       )}
     </div>
+  );
+}
+
+function ArticleTableOfContents({ headings }: { headings: BlogHeading[] }) {
+  if (!headings.length) return null;
+  return (
+    <nav aria-label="Table of contents" className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+      <p className="mb-3 text-xs font-bold uppercase tracking-[0.15em] text-slate-500">On this page</p>
+      <ol className="space-y-2">
+        {headings.map((heading) => (
+          <li key={heading.id} className={heading.level === 3 ? "pl-4" : ""}>
+            <a href={`#${heading.id}`} className="block text-xs leading-relaxed text-slate-400 transition hover:text-[#FF6B00]">
+              {heading.text}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
   );
 }
 
@@ -602,16 +665,19 @@ export default async function BlogSlugPage({
   const post = await getPostBySlug(slug);
   if (!post) notFound();
 
-  const related = await getRelatedPosts(post.relatedSlugs);
-  const Icon = post.icon;
+  const normalized = normalizeSectionsWithHeadings(post.sections);
+  const renderedPost = { ...post, sections: normalized.sections, headings: normalized.headings };
 
-  const postUrl = canonicalUrl(`/blog/${post.slug}`);
-  const articleLd = articleSchema(post, postUrl);
-  const faqLd = faqSchema(post);
+  const related = await getRelatedPosts(renderedPost.relatedSlugs);
+  const Icon = renderedPost.icon;
+
+  const postUrl = canonicalUrl(`/blog/${renderedPost.slug}`);
+  const articleLd = articleSchema(renderedPost, postUrl);
+  const faqLd = faqSchema(renderedPost);
   const breadcrumbLd = breadcrumbSchema([
     { name: "Home", url: canonicalUrl("/") },
     { name: "Blog", url: canonicalUrl("/blog") },
-    { name: post.title, url: postUrl },
+    { name: renderedPost.title, url: postUrl },
   ]);
 
   return (
@@ -621,21 +687,21 @@ export default async function BlogSlugPage({
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       <main className="min-h-screen bg-[#050B18] no-center-mobile">
         <ArticleHero
-          category={post.category}
-          accent={post.accent}
-          title={post.title}
-          excerpt={post.excerpt}
-          readTime={post.readTime}
-          publishDate={post.publishDate}
-          tags={post.tags}
-          Icon={Icon}
+          category={renderedPost.category}
+          accent={renderedPost.accent}
+          title={renderedPost.title}
+          excerpt={renderedPost.excerpt}
+          readTime={renderedPost.readTime}
+          publishDate={renderedPost.publishDate}
+          tags={renderedPost.tags}
         />
 
         <ArticleFeaturedImage
-          category={post.category}
-          accent={post.accent}
+          category={renderedPost.category}
+          accent={renderedPost.accent}
           Icon={Icon}
-          image={post.coverImage}
+          image={renderedPost.coverImage}
+          imageAlt={renderedPost.coverImageAlt}
         />
 
         {/* ── Body + Sidebar ─────────────────────────────────────────────── */}
@@ -649,42 +715,46 @@ export default async function BlogSlugPage({
                 <div
                   className="mb-10 flex items-center gap-5 rounded-2xl border p-5"
                   style={{
-                    borderColor: `${post.accent}25`,
-                    background: `${post.accent}08`,
+                    borderColor: `${renderedPost.accent}25`,
+                    background: `${renderedPost.accent}08`,
                   }}
                 >
                   <div
                     className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border"
                     style={{
-                      background: `${post.accent}18`,
-                      borderColor: `${post.accent}35`,
-                      color: post.accent,
+                      background: `${renderedPost.accent}18`,
+                      borderColor: `${renderedPost.accent}35`,
+                      color: renderedPost.accent,
                     }}
                   >
                     <Icon size={26} strokeWidth={1.5} />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-white">{post.category} Guide</p>
+                    <p className="text-sm font-bold text-white">{renderedPost.category} Guide</p>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      {post.readTime} · Updated {post.publishDate}
+                      {renderedPost.readTime} · Updated {renderedPost.publishDate}
                     </p>
                   </div>
                 </div>
 
                 {/* Sections */}
                 <div className="space-y-10">
-                  {post.sections.map((section, i) => (
+                  {renderedPost.sections.map((section, i) => (
                     <div key={i}>
                       <ArticleSection
+                        id={section.id}
                         heading={section.heading}
+                        headingLevel={section.headingLevel}
                         content={section.content}
                         bullets={section.bullets}
                         tip={section.tip}
                         image={section.image}
-                        accent={post.accent}
-                        index={i}
+                        imageAlt={section.imageAlt}
+                        imageCaption={section.imageCaption}
+                        imageWidth={section.imageWidth}
+                        accent={renderedPost.accent}
                       />
-                      {i < post.sections.length - 1 && (
+                      {i < renderedPost.sections.length - 1 && (
                         <div className="mt-10 h-px bg-gradient-to-r from-transparent via-white/[0.07] to-transparent" />
                       )}
                     </div>
@@ -714,6 +784,7 @@ export default async function BlogSlugPage({
               {/* ── Sidebar ──────────────────────────────────────────────── */}
               <aside className="w-full shrink-0 lg:w-[320px]">
                 <div className="space-y-6 lg:sticky lg:top-[120px] lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto">
+                  <ArticleTableOfContents headings={normalized.headings} />
                   {/* Related articles */}
                   {related.length > 0 && (
                     <div>

@@ -4,10 +4,12 @@
  */
 export async function revalidateBlog(slug?: string): Promise<void> {
   try {
+    const token = await auth.currentUser?.getIdToken();
     await fetch("/api/admin/revalidate", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({ slug }),
     });
@@ -15,3 +17,4 @@ export async function revalidateBlog(slug?: string): Promise<void> {
     console.error("Failed to revalidate blog paths via API:", err);
   }
 }
+import { auth } from "@/lib/firebase";
